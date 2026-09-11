@@ -1,0 +1,349 @@
+{
+  "total_features": 49,
+  "ml_features_count": 43,
+  "features": {
+    "transaction_id": {
+      "source_column": "transaction_id",
+      "feature_type": "identifier",
+      "transformation": "none",
+      "leakage_status": "Safe - Exclude from ML matrix",
+      "used_by_ml": false
+    },
+    "customer_id": {
+      "source_column": "customer_id",
+      "feature_type": "identifier",
+      "transformation": "none",
+      "leakage_status": "Safe - Exclude from ML matrix",
+      "used_by_ml": false
+    },
+    "transaction_amount": {
+      "source_column": "transaction_amount",
+      "feature_type": "numerical",
+      "transformation": "none_or_datetime_extract",
+      "leakage_status": "Safe - Direct raw or derived feature",
+      "used_by_ml": true
+    },
+    "transaction_time": {
+      "source_column": "transaction_time",
+      "feature_type": "datetime",
+      "transformation": "timestamp_parsing",
+      "leakage_status": "Safe - Chronological ordering index",
+      "used_by_ml": false
+    },
+    "previous_transactions_count": {
+      "source_column": "previous_transactions_count",
+      "feature_type": "numerical",
+      "transformation": "none_or_datetime_extract",
+      "leakage_status": "Safe - Direct raw or derived feature",
+      "used_by_ml": true
+    },
+    "is_fraud": {
+      "source_column": "is_fraud",
+      "feature_type": "target",
+      "transformation": "none",
+      "leakage_status": "Target Only",
+      "used_by_ml": false
+    },
+    "parsed_time": {
+      "source_column": "parsed_time",
+      "feature_type": "datetime",
+      "transformation": "timestamp_parsing",
+      "leakage_status": "Safe - Chronological ordering index",
+      "used_by_ml": false
+    },
+    "transaction_year": {
+      "source_column": "transaction_year",
+      "feature_type": "categorical",
+      "transformation": "none_or_datetime_extract",
+      "leakage_status": "Safe - Direct raw or derived feature",
+      "used_by_ml": true
+    },
+    "transaction_month": {
+      "source_column": "transaction_month",
+      "feature_type": "categorical",
+      "transformation": "none_or_datetime_extract",
+      "leakage_status": "Safe - Direct raw or derived feature",
+      "used_by_ml": true
+    },
+    "transaction_day": {
+      "source_column": "transaction_day",
+      "feature_type": "numerical",
+      "transformation": "none_or_datetime_extract",
+      "leakage_status": "Safe - Direct raw or derived feature",
+      "used_by_ml": true
+    },
+    "transaction_hour": {
+      "source_column": "transaction_hour",
+      "feature_type": "numerical",
+      "transformation": "none_or_datetime_extract",
+      "leakage_status": "Safe - Direct raw or derived feature",
+      "used_by_ml": true
+    },
+    "transaction_minute": {
+      "source_column": "transaction_minute",
+      "feature_type": "numerical",
+      "transformation": "none_or_datetime_extract",
+      "leakage_status": "Safe - Direct raw or derived feature",
+      "used_by_ml": true
+    },
+    "day_of_week": {
+      "source_column": "day_of_week",
+      "feature_type": "categorical",
+      "transformation": "none_or_datetime_extract",
+      "leakage_status": "Safe - Direct raw or derived feature",
+      "used_by_ml": true
+    },
+    "is_weekend": {
+      "source_column": "is_weekend",
+      "feature_type": "categorical",
+      "transformation": "none_or_datetime_extract",
+      "leakage_status": "Safe - Direct raw or derived feature",
+      "used_by_ml": true
+    },
+    "is_night_transaction": {
+      "source_column": "is_night_transaction",
+      "feature_type": "categorical",
+      "transformation": "none_or_datetime_extract",
+      "leakage_status": "Safe - Direct raw or derived feature",
+      "used_by_ml": true
+    },
+    "amount_log": {
+      "source_column": "transaction_amount",
+      "feature_type": "numerical",
+      "transformation": "log1p",
+      "leakage_status": "Safe - Row isolated",
+      "used_by_ml": true
+    },
+    "amount_zscore_global": {
+      "source_column": "transaction_amount",
+      "feature_type": "numerical",
+      "transformation": "zscore_train_fit",
+      "leakage_status": "Safe - Fit on train fold only",
+      "used_by_ml": true
+    },
+    "customer_previous_transaction_count": {
+      "source_column": "customer_history",
+      "feature_type": "numerical",
+      "transformation": "shifted_expanding_window",
+      "leakage_status": "Safe - Shifted prior transactions only",
+      "used_by_ml": false
+    },
+    "customer_transaction_count": {
+      "source_column": "customer_history",
+      "feature_type": "numerical",
+      "transformation": "shifted_expanding_window",
+      "leakage_status": "Safe - Shifted prior transactions only",
+      "used_by_ml": true
+    },
+    "customer_average_amount": {
+      "source_column": "customer_history",
+      "feature_type": "categorical",
+      "transformation": "shifted_expanding_window",
+      "leakage_status": "Safe - Shifted prior transactions only",
+      "used_by_ml": true
+    },
+    "customer_max_amount": {
+      "source_column": "customer_history",
+      "feature_type": "numerical",
+      "transformation": "shifted_expanding_window",
+      "leakage_status": "Safe - Shifted prior transactions only",
+      "used_by_ml": true
+    },
+    "customer_min_amount": {
+      "source_column": "customer_history",
+      "feature_type": "numerical",
+      "transformation": "shifted_expanding_window",
+      "leakage_status": "Safe - Shifted prior transactions only",
+      "used_by_ml": true
+    },
+    "customer_amount_deviation": {
+      "source_column": "customer_history",
+      "feature_type": "numerical",
+      "transformation": "shifted_expanding_window",
+      "leakage_status": "Safe - Shifted prior transactions only",
+      "used_by_ml": true
+    },
+    "customer_transactions_last_1h": {
+      "source_column": "transaction_time",
+      "feature_type": "numerical",
+      "transformation": "time_window_rolling_closed_left",
+      "leakage_status": "Safe - Prior timestamps only",
+      "used_by_ml": true
+    },
+    "customer_transactions_last_6h": {
+      "source_column": "transaction_time",
+      "feature_type": "numerical",
+      "transformation": "time_window_rolling_closed_left",
+      "leakage_status": "Safe - Prior timestamps only",
+      "used_by_ml": true
+    },
+    "customer_transactions_last_24h": {
+      "source_column": "transaction_time",
+      "feature_type": "numerical",
+      "transformation": "time_window_rolling_closed_left",
+      "leakage_status": "Safe - Prior timestamps only",
+      "used_by_ml": true
+    },
+    "customer_location_change": {
+      "source_column": "customer_history",
+      "feature_type": "categorical",
+      "transformation": "shifted_expanding_window",
+      "leakage_status": "Safe - Shifted prior transactions only",
+      "used_by_ml": true
+    },
+    "customer_device_change": {
+      "source_column": "customer_history",
+      "feature_type": "numerical",
+      "transformation": "shifted_expanding_window",
+      "leakage_status": "Safe - Shifted prior transactions only",
+      "used_by_ml": true
+    },
+    "customer_unique_location_count": {
+      "source_column": "customer_history",
+      "feature_type": "numerical",
+      "transformation": "shifted_expanding_window",
+      "leakage_status": "Safe - Shifted prior transactions only",
+      "used_by_ml": true
+    },
+    "customer_unique_device_count": {
+      "source_column": "customer_history",
+      "feature_type": "numerical",
+      "transformation": "shifted_expanding_window",
+      "leakage_status": "Safe - Shifted prior transactions only",
+      "used_by_ml": true
+    },
+    "transaction_type=deposit": {
+      "source_column": "transaction_type",
+      "feature_type": "binary_categorical",
+      "transformation": "one_hot_encoding",
+      "leakage_status": "Safe - One-hot dummy",
+      "used_by_ml": true
+    },
+    "transaction_type=payment": {
+      "source_column": "transaction_type",
+      "feature_type": "binary_categorical",
+      "transformation": "one_hot_encoding",
+      "leakage_status": "Safe - One-hot dummy",
+      "used_by_ml": true
+    },
+    "transaction_type=transfer": {
+      "source_column": "transaction_type",
+      "feature_type": "binary_categorical",
+      "transformation": "one_hot_encoding",
+      "leakage_status": "Safe - One-hot dummy",
+      "used_by_ml": true
+    },
+    "transaction_type=withdrawal": {
+      "source_column": "transaction_type",
+      "feature_type": "binary_categorical",
+      "transformation": "one_hot_encoding",
+      "leakage_status": "Safe - One-hot dummy",
+      "used_by_ml": true
+    },
+    "transaction_location=California": {
+      "source_column": "customer_history",
+      "feature_type": "categorical",
+      "transformation": "shifted_expanding_window",
+      "leakage_status": "Safe - Shifted prior transactions only",
+      "used_by_ml": true
+    },
+    "transaction_location=Florida": {
+      "source_column": "customer_history",
+      "feature_type": "categorical",
+      "transformation": "shifted_expanding_window",
+      "leakage_status": "Safe - Shifted prior transactions only",
+      "used_by_ml": true
+    },
+    "transaction_location=Georgia": {
+      "source_column": "customer_history",
+      "feature_type": "categorical",
+      "transformation": "shifted_expanding_window",
+      "leakage_status": "Safe - Shifted prior transactions only",
+      "used_by_ml": true
+    },
+    "transaction_location=Illinois": {
+      "source_column": "customer_history",
+      "feature_type": "categorical",
+      "transformation": "shifted_expanding_window",
+      "leakage_status": "Safe - Shifted prior transactions only",
+      "used_by_ml": true
+    },
+    "transaction_location=New York": {
+      "source_column": "customer_history",
+      "feature_type": "categorical",
+      "transformation": "shifted_expanding_window",
+      "leakage_status": "Safe - Shifted prior transactions only",
+      "used_by_ml": true
+    },
+    "transaction_location=Texas": {
+      "source_column": "customer_history",
+      "feature_type": "categorical",
+      "transformation": "shifted_expanding_window",
+      "leakage_status": "Safe - Shifted prior transactions only",
+      "used_by_ml": true
+    },
+    "transaction_location=Washington": {
+      "source_column": "customer_history",
+      "feature_type": "categorical",
+      "transformation": "shifted_expanding_window",
+      "leakage_status": "Safe - Shifted prior transactions only",
+      "used_by_ml": true
+    },
+    "device_type=ATM": {
+      "source_column": "customer_history",
+      "feature_type": "numerical",
+      "transformation": "shifted_expanding_window",
+      "leakage_status": "Safe - Shifted prior transactions only",
+      "used_by_ml": true
+    },
+    "device_type=POS": {
+      "source_column": "customer_history",
+      "feature_type": "numerical",
+      "transformation": "shifted_expanding_window",
+      "leakage_status": "Safe - Shifted prior transactions only",
+      "used_by_ml": true
+    },
+    "device_type=desktop": {
+      "source_column": "customer_history",
+      "feature_type": "numerical",
+      "transformation": "shifted_expanding_window",
+      "leakage_status": "Safe - Shifted prior transactions only",
+      "used_by_ml": true
+    },
+    "device_type=mobile": {
+      "source_column": "customer_history",
+      "feature_type": "numerical",
+      "transformation": "shifted_expanding_window",
+      "leakage_status": "Safe - Shifted prior transactions only",
+      "used_by_ml": true
+    },
+    "amount_bucket=high": {
+      "source_column": "amount_bucket",
+      "feature_type": "binary_categorical",
+      "transformation": "one_hot_encoding",
+      "leakage_status": "Safe - One-hot dummy",
+      "used_by_ml": true
+    },
+    "amount_bucket=low_medium": {
+      "source_column": "amount_bucket",
+      "feature_type": "binary_categorical",
+      "transformation": "one_hot_encoding",
+      "leakage_status": "Safe - One-hot dummy",
+      "used_by_ml": true
+    },
+    "amount_bucket=micro": {
+      "source_column": "amount_bucket",
+      "feature_type": "binary_categorical",
+      "transformation": "one_hot_encoding",
+      "leakage_status": "Safe - One-hot dummy",
+      "used_by_ml": true
+    },
+    "amount_bucket=very_high": {
+      "source_column": "amount_bucket",
+      "feature_type": "binary_categorical",
+      "transformation": "one_hot_encoding",
+      "leakage_status": "Safe - One-hot dummy",
+      "used_by_ml": true
+    }
+  }
+}

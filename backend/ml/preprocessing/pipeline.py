@@ -1,146 +1,234 @@
 """
-Data Preprocessing Pipeline Entrypoint for FraudSentinel.
+End-to-End Leakage-Safe Preprocessing & Engineering Pipeline for FraudSentinel.
 
-Executes end-to-end data ingestion, merging, quality check, feature engineering,
-feature selection, and output serialization for the FraudSentinel fraud detection system.
+Executes data loading, datetime parsing, feature creation (behavioral, velocity, amount,
+location/device change), one-hot encoding, chronological splitting, metadata export,
+and verification.
 """
 
-import argparse
-import sys
+import json
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, List, Tuple
 
+import numpy as np
 import pandas as pd
 
-# Support both package imports and standalone script execution
 try:
-    from .cleaning import (
-        analyze_missing_values,
-        detect_duplicates,
-        inspect_data_quality,
-        load_identity_data,
-        load_transaction_data,
-        merge_datasets,
+    from .cleaning import load_banking_data, parse_datetime
+    from .feature_engineering import (
+        create_amount_features,
+        create_customer_behavioral_features,
+        create_datetime_features,
+        create_location_device_history_features,
+        create_velocity_features,
+        encode_categorical_features,
     )
-    from .feature_engineering import create_features, select_features
+    from .split import split_dataset_chronological
 except ImportError:
-    from cleaning import (
-        analyze_missing_values,
-        detect_duplicates,
-        inspect_data_quality,
-        load_identity_data,
-        load_transaction_data,
-        merge_datasets,
+    from cleaning import load_banking_data, parse_datetime
+    from feature_engineering import (
+        create_amount_features,
+        create_customer_behavioral_features,
+        create_datetime_features,
+        create_location_device_history_features,
+        create_velocity_features,
+        encode_categorical_features,
     )
-    from feature_engineering import create_features, select_features
+    from split import split_dataset_chronological
 
 
-def run_preprocessing_pipeline(
-    raw_dir: Union[str, Path] = "data/raw/ieee_cis",
-    output_file: Union[str, Path] = "data/processed/fraudsentinel_transactions.csv",
-    sample_size: Optional[int] = None,
-) -> Tuple[pd.DataFrame, Dict[str, Any]]:
+def generate_feature_metadata(df_columns: List[str]) -> Dict[str, Any]:
     """
-    Execute full data ingestion and preprocessing pipeline.
-
-    Steps:
-    1. Verify raw input dataset availability.
-    2. Load train_transaction.csv and train_identity.csv.
-    3. Merge datasets on TransactionID.
-    4. Run initial data quality inspection.
-    5. Perform domain feature engineering.
-    6. Filter selected feature subset.
-    7. Generate final data quality summary.
-    8. Export processed dataset to CSV.
-
-    Args:
-        raw_dir: Path to directory containing raw CSVs.
-        output_file: Path where processed CSV will be saved.
-        sample_size: Optional row limit for fast local testing.
-
-    Returns:
-        Tuple[pd.DataFrame, Dict[str, Any]]: Processed DataFrame and metrics summary dictionary.
+    Generate comprehensive feature metadata detailing source, type, transformation,
+    leakage audit status, and ML usage flags.
     """
-    raw_path = Path(raw_dir)
-    out_path = Path(output_file)
+    metadata: Dict[str, Dict[str, Any]] = {}
 
-    trans_file = raw_path / "train_transaction.csv"
-    id_file = raw_path / "train_identity.csv"
+    for col in df_columns:
+        if col in ["transaction_id", "customer_id"]:
+            metadata[col] = {
+                "source_column": col,
+                "feature_type": "identifier",
+                "transformation": "none",
+                "leakage_status": "Safe - Exclude from ML matrix",
+                "used_by_ml": False,
+            }
+        elif col in ["is_fraud"]:
+            metadata[col] = {
+                "source_column": col,
+                "feature_type": "target",
+                "transformation": "none",
+                "leakage_status": "Target Only",
+                "used_by_ml": False,
+            }
+        elif col in ["parsed_time", "transaction_time"]:
+            metadata[col] = {
+                "source_column": col,
+                "feature_type": "datetime",
+                "transformation": "timestamp_parsing",
+                "leakage_status": "Safe - Chronological ordering index",
+                "used_by_ml": False,
+            }
+        elif col.startswith("amount_log"):
+            metadata[col] = {
+                "source_column": "transaction_amount",
+                "feature_type": "numerical",
+                "transformation": "log1p",
+                "leakage_status": "Safe - Row isolated",
+                "used_by_ml": True,
+            }
+        elif col.startswith("amount_zscore"):
+            metadata[col] = {
+                "source_column": "transaction_amount",
+                "feature_type": "numerical",
+                "transformation": "zscore_train_fit",
+                "leakage_status": "Safe - Fit on train fold only",
+                "used_by_ml": True,
+            }
+        elif "customer_transactions_last" in col:
+            metadata[col] = {
+                "source_column": "transaction_time",
+                "feature_type": "numerical",
+                "transformation": "time_window_rolling_closed_left",
+                "leakage_status": "Safe - Prior timestamps only",
+                "used_by_ml": True,
+            }
+        elif col.startswith("customer_") or "location" in col or "device" in col:
+            metadata[col] = {
+                "source_column": "customer_history",
+                "feature_type": "numerical" if "count" in col or "dev" in col or "avg" in col or "max" in col or "min" in col else "categorical",
+                "transformation": "shifted_expanding_window",
+                "leakage_status": "Safe - Shifted prior transactions only",
+                "used_by_ml": not col.startswith("customer_previous_"),
+            }
+        elif "=" in col:
+            prefix = col.split("=")[0]
+            metadata[col] = {
+                "source_column": prefix,
+                "feature_type": "binary_categorical",
+                "transformation": "one_hot_encoding",
+                "leakage_status": "Safe - One-hot dummy",
+                "used_by_ml": True,
+            }
+        else:
+            metadata[col] = {
+                "source_column": col,
+                "feature_type": "numerical" if df_columns and col in ["transaction_amount", "previous_transactions_count", "transaction_hour", "transaction_minute", "transaction_day"] else "categorical",
+                "transformation": "none_or_datetime_extract",
+                "leakage_status": "Safe - Direct raw or derived feature",
+                "used_by_ml": True,
+            }
+
+    return {
+        "total_features": len(metadata),
+        "ml_features_count": sum(1 for v in metadata.values() if v["used_by_ml"]),
+        "features": metadata,
+    }
+
+
+def run_feature_pipeline(
+    primary_path: str = "data/raw/banking_fraud/fraud_detection_20k.csv",
+    test_path: str = "data/raw/banking_fraud/fraud_detection_test_2k.csv",
+    output_dir: str = "data/processed",
+) -> Dict[str, Any]:
+    """
+    Run end-to-end leakage-safe feature engineering pipeline.
+    """
+    out_dir = Path(output_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     print("==================================================")
-    print("      FraudSentinel Data Preprocessing Pipeline   ")
+    print("      FraudSentinel Feature Engineering Pipeline  ")
     print("==================================================")
-    print(f"Raw Input Directory:  {raw_path.resolve()}")
-    print(f"Output File Target:   {out_path.resolve()}")
-    if sample_size:
-        print(f"Sample Size Limit:    {sample_size:,} rows")
-    print("--------------------------------------------------\n")
 
-    # Step 1: Check raw files
-    if not trans_file.exists():
-        print(f"[ERROR] Transaction dataset missing: '{trans_file}'")
-        print("\n[ACTION REQUIRED]: Please place raw IEEE-CIS dataset files in:")
-        print(f"   - {trans_file}")
-        print(f"   - {id_file}\n")
-        raise FileNotFoundError(f"Raw file not found: {trans_file}")
+    # 1. Load Data
+    print(f"[LOAD] Loading primary dataset: '{primary_path}'")
+    df_primary = load_banking_data(primary_path)
 
-    # Step 2: Ingestion
-    df_trans = load_transaction_data(trans_file)
-    if sample_size and len(df_trans) > sample_size:
-        df_trans = df_trans.head(sample_size)
+    print(f"[LOAD] Loading blind test dataset: '{test_path}'")
+    df_blind = load_banking_data(test_path)
 
-    if id_file.exists():
-        df_id = load_identity_data(id_file)
-        df_merged = merge_datasets(df_trans, df_id)
-    else:
-        print(f"[WARNING] Identity file not found at '{id_file}'. Proceeding with transaction data only.")
-        df_merged = df_trans
+    # 2. Parse Timestamps
+    df_primary = parse_datetime(df_primary, time_col="transaction_time")
+    df_blind = parse_datetime(df_blind, time_col="transaction_time")
 
-    # Step 3: Feature Engineering
-    df_engineered = create_features(df_merged)
+    # 3. Create Datetime Features
+    df_primary = create_datetime_features(df_primary)
+    df_blind = create_datetime_features(df_blind)
 
-    # Step 4: Feature Selection
-    df_processed = select_features(df_engineered, include_target=True)
+    # 4. Create Amount Features (Fit stats on Primary train fold during split, compute initial)
+    df_primary, primary_amt_stats = create_amount_features(df_primary)
+    df_blind, _ = create_amount_features(df_blind, amount_stats=primary_amt_stats)
 
-    # Step 5: Data Quality Inspection & Summary
-    metrics = inspect_data_quality(df_processed, target_col="isFraud")
+    # 5. Create Customer Behavioral Features (Shifted & Expanding)
+    df_primary = create_customer_behavioral_features(df_primary)
+    df_blind = create_customer_behavioral_features(df_blind)
 
-    # Step 6: Export Processed Dataset
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    print(f"[EXPORT] Saving processed dataset to '{out_path}'...")
-    df_processed.to_csv(out_path, index=False)
-    print(f"[SUCCESS] Processed dataset saved successfully! Shape: {df_processed.shape}\n")
+    # 6. Create Velocity Features (Rolling Window Prior Only)
+    df_primary = create_velocity_features(df_primary)
+    df_blind = create_velocity_features(df_blind)
 
-    return df_processed, metrics
+    # 7. Create Location & Device History Features
+    df_primary = create_location_device_history_features(df_primary)
+    df_blind = create_location_device_history_features(df_blind)
+
+    # 8. Encode Categorical Features
+    df_primary_enc, onehot_cols = encode_categorical_features(df_primary)
+    df_blind_enc, _ = encode_categorical_features(df_blind, expected_onehot_cols=onehot_cols)
+
+    # Clean string columns that were dummy encoded if needed or keep numeric
+    cols_to_drop = ["customer_previous_location", "customer_previous_device", "amount_bucket"]
+    df_primary_enc = df_primary_enc.drop(columns=[c for c in cols_to_drop if c in df_primary_enc.columns], errors="ignore")
+    df_blind_enc = df_blind_enc.drop(columns=[c for c in cols_to_drop if c in df_blind_enc.columns], errors="ignore")
+
+    # 9. Chronological Split (Primary 20k -> Train 70%, Val 15%, Test 15%)
+    train_df, val_df, test_df, split_summary = split_dataset_chronological(
+        df_primary_enc, time_col="parsed_time", train_ratio=0.70, val_ratio=0.15, test_ratio=0.15
+    )
+
+    # Save Processed Datasets
+    train_path = out_dir / "fraudsentinel_train.csv"
+    val_path = out_dir / "fraudsentinel_validation.csv"
+    test_path_out = out_dir / "fraudsentinel_internal_test.csv"
+    blind_path = out_dir / "fraudsentinel_blind_test.csv"
+    meta_path = out_dir / "feature_metadata.json"
+
+    print("[SAVE] Exporting processed datasets to data/processed/...")
+    train_df.to_csv(train_path, index=False)
+    val_df.to_csv(val_path, index=False)
+    test_df.to_csv(test_path_out, index=False)
+    df_blind_enc.to_csv(blind_path, index=False)
+
+    # Generate Feature Metadata
+    feature_meta = generate_feature_metadata(train_df.columns.tolist())
+    with open(meta_path, "w", encoding="utf-8") as f:
+        json.dump(feature_meta, f, indent=2)
+
+    print(f"[SUCCESS] Exported:")
+    print(f"  - Train:         {train_path} ({len(train_df):,} rows x {train_df.shape[1]} cols)")
+    print(f"  - Validation:    {val_path} ({len(val_df):,} rows x {val_df.shape[1]} cols)")
+    print(f"  - Internal Test: {test_path_out} ({len(test_df):,} rows x {test_df.shape[1]} cols)")
+    print(f"  - Blind Test:    {blind_path} ({len(df_blind_enc):,} rows x {df_blind_enc.shape[1]} cols)")
+    print(f"  - Feature Meta:  {meta_path}\n")
+
+    # Verification Checks
+    nan_count = train_df.isna().sum().sum()
+    inf_count = np.isinf(train_df.select_dtypes(include=[np.number]).values).sum()
+
+    pipeline_summary = {
+        "train_rows": len(train_df),
+        "val_rows": len(val_df),
+        "test_rows": len(test_df),
+        "blind_test_rows": len(df_blind_enc),
+        "total_feature_cols": train_df.shape[1],
+        "ml_feature_cols": feature_meta["ml_features_count"],
+        "total_nan_in_train": int(nan_count),
+        "total_inf_in_train": int(inf_count),
+        "split_metrics": split_summary,
+    }
+
+    return pipeline_summary
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="FraudSentinel Data Preprocessing Pipeline")
-    parser.add_argument(
-        "--raw-dir",
-        default="data/raw/ieee_cis",
-        help="Path to directory containing raw IEEE-CIS CSV files",
-    )
-    parser.add_argument(
-        "--output-file",
-        default="data/processed/fraudsentinel_transactions.csv",
-        help="Target filepath for output processed CSV",
-    )
-    parser.add_argument(
-        "--sample-size",
-        type=int,
-        default=None,
-        help="Optional row sample limit for quick execution/testing",
-    )
-
-    args = parser.parse_args()
-
-    try:
-        run_preprocessing_pipeline(
-            raw_dir=args.raw_dir,
-            output_file=args.output_file,
-            sample_size=args.sample_size,
-        )
-    except FileNotFoundError as e:
-        print(f"\nPipeline halted: {e}")
-        sys.exit(1)
+    run_feature_pipeline()
