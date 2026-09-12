@@ -12,6 +12,7 @@ from backend.ml.reasoning.answer_extraction import AnswerExtractor, ExtractedAns
 from backend.ml.reasoning.backward_chaining import BackwardChainingEngine, BackwardChainingResult
 from backend.ml.reasoning.conceptual_graph import ConceptualGraph
 from backend.ml.reasoning.forward_chaining import ForwardChainingEngine, ForwardChainingResult
+from backend.ml.reasoning.bayesian_network import BayesianInferenceResult, FraudBayesianNetwork
 from backend.ml.reasoning.knowledge_base import (
     Fact,
     KnowledgeBase,
@@ -23,14 +24,20 @@ from backend.ml.reasoning.semantic_network import SemanticNetwork
 
 class FraudExpertSystem:
     """
-    Unified Rule-Based Expert System for explainable fraud detection.
+    Unified Rule-Based Expert System for explainable fraud detection,
+    combining classical symbolic KR&R with Bayesian probabilistic reasoning.
     """
 
-    def __init__(self, kb: Optional[KnowledgeBase] = None):
+    def __init__(
+        self,
+        kb: Optional[KnowledgeBase] = None,
+        bayesian_net: Optional[FraudBayesianNetwork] = None,
+    ):
         self.kb = kb or KnowledgeBase.create_default_fraud_kb()
         self.fc_engine = ForwardChainingEngine(self.kb)
         self.bc_engine = BackwardChainingEngine(self.kb)
         self.resolution_engine = ResolutionRefutationEngine(self.kb)
+        self.bayesian_net = bayesian_net or FraudBayesianNetwork()
 
     def evaluate_transaction(self, tx_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -83,14 +90,20 @@ class FraudExpertSystem:
             derived_facts={f.name for f in fc_result.final_facts},
         )
 
+        # 8. Bayesian Belief Network (Probabilistic Risk Estimation & Latent Inference)
+        bayesian_result: BayesianInferenceResult = self.bayesian_net.evaluate_transaction(tx_data)
+
         # Determine consolidated risk level
-        if fc_result.is_fraud or bc_fraud_result.proven or resolution_result.refutation_successful:
-            risk_level = "CRITICAL" if len(fc_result.triggered_rules) > 1 else "HIGH"
+        if fc_result.is_fraud or bc_fraud_result.proven or resolution_result.refutation_successful or bayesian_result.fraud_probability >= 0.85:
+            risk_level = "CRITICAL" if (len(fc_result.triggered_rules) > 1 or bayesian_result.fraud_probability >= 0.85) else "HIGH"
             is_fraud_verdict = True
-        elif fc_result.is_legitimate:
+        elif bayesian_result.fraud_probability >= 0.50:
+            risk_level = "HIGH"
+            is_fraud_verdict = True
+        elif fc_result.is_legitimate and bayesian_result.fraud_probability < 0.05:
             risk_level = "LOW"
             is_fraud_verdict = False
-        elif any("suspicious" in f.name for f in fc_result.final_facts):
+        elif any("suspicious" in f.name for f in fc_result.final_facts) or bayesian_result.fraud_probability >= 0.15:
             risk_level = "MEDIUM"
             is_fraud_verdict = False
         else:
@@ -102,7 +115,8 @@ class FraudExpertSystem:
             "verdict": "FRAUD" if is_fraud_verdict else ("LEGITIMATE" if fc_result.is_legitimate else "INCONCLUSIVE"),
             "is_fraud": is_fraud_verdict,
             "risk_level": risk_level,
-            "confidence": extracted_answer.confidence,
+            "confidence": max(extracted_answer.confidence, bayesian_result.fraud_probability) if is_fraud_verdict else extracted_answer.confidence,
+            "bayesian_fraud_probability": round(bayesian_result.fraud_probability, 4),
             "summary_explanation": extracted_answer.natural_language_explanation,
             # Component 1 & 2: Knowledge Base & Facts
             "knowledge_base": {
@@ -163,4 +177,6 @@ class FraudExpertSystem:
                 ],
                 "final_clause": resolution_result.final_clause,
             },
+            # Component 9: Bayesian Probabilistic Reasoning
+            "bayesian_reasoning": bayesian_result.to_dict(),
         }

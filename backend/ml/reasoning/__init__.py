@@ -14,6 +14,15 @@ Exposes:
 
 from backend.ml.reasoning.answer_extraction import AnswerExtractor, ExtractedAnswer
 from backend.ml.reasoning.backward_chaining import BackwardChainingEngine, BackwardChainingResult, ProofNode
+from backend.ml.reasoning.bayesian_network import (
+    CPT,
+    BayesianInferenceResult,
+    BayesianNetwork,
+    DiscreteVariable,
+    FactorContribution,
+    FraudBayesianNetwork,
+    extract_evidence_from_transaction,
+)
 from backend.ml.reasoning.conceptual_graph import ConceptNode, ConceptualGraph, ConceptualRelationNode
 from backend.ml.reasoning.expert_system import FraudExpertSystem
 from backend.ml.reasoning.forward_chaining import ForwardChainingEngine, ForwardChainingResult
@@ -56,4 +65,11 @@ __all__ = [
     "Clause",
     "Literal",
     "ResolutionStep",
+    "BayesianNetwork",
+    "FraudBayesianNetwork",
+    "BayesianInferenceResult",
+    "FactorContribution",
+    "extract_evidence_from_transaction",
+    "CPT",
+    "DiscreteVariable",
 ]
