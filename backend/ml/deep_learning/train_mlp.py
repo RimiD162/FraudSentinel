@@ -195,24 +195,25 @@ def train_fraud_mlp(
 def find_best_validation_threshold(
     y_val: np.ndarray,
     y_val_probs: np.ndarray,
-    threshold_min: float = 0.01,
-    threshold_max: float = 0.99,
-    threshold_step: float = 0.01,
-    min_recall: float = 0.40,
+    candidate_thresholds: Optional[List[float]] = None,
+    optimization_metric: str = "f1",
 ) -> Tuple[float, Dict[str, Any], pd.DataFrame]:
     """
-    Grid search thresholds on validation data from 0.01 to 0.99.
-    Selects the threshold that optimizes F1 while maintaining viable recall.
+    Evaluate decision thresholds on validation data to identify the optimal F1 threshold.
+    Directly selects the threshold that maximizes validation F1 score without hidden constraints.
     """
-    thresholds = np.arange(threshold_min, threshold_max + threshold_step / 2, threshold_step)
-    records = []
+    if candidate_thresholds is not None:
+        thresholds = candidate_thresholds
+    else:
+        thresholds = [0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90]
 
-    best_threshold = 0.50
-    best_f1 = -1.0
+    records = []
+    best_threshold = thresholds[0]
+    best_score = -1.0
     best_metrics: Dict[str, Any] = {}
 
     for th in thresholds:
-        th_val = round(float(th), 3)
+        th_val = round(float(th), 2)
         metrics_dict = calculate_evaluation_metrics(y_val, y_val_probs, threshold=th_val)
         records.append(
             {
@@ -230,20 +231,11 @@ def find_best_validation_threshold(
             }
         )
 
-        # Primary optimization: Maximize F1 with a viable recall floor,
-        # fallback to raw max F1 if constrained space is empty
-        if metrics_dict["recall"] >= min_recall and metrics_dict["f1"] > best_f1:
-            best_f1 = metrics_dict["f1"]
+        score = metrics_dict[optimization_metric]
+        if score > best_score:
+            best_score = score
             best_threshold = th_val
             best_metrics = metrics_dict
-
-    # If no threshold met min_recall, select absolute max F1
-    if best_f1 <= 0:
-        for r in records:
-            if r["f1"] > best_f1:
-                best_f1 = r["f1"]
-                best_threshold = r["threshold"]
-        best_metrics = calculate_evaluation_metrics(y_val, y_val_probs, threshold=best_threshold)
 
     val_grid_df = pd.DataFrame(records)
     return best_threshold, best_metrics, val_grid_df
