@@ -89,7 +89,58 @@
           "tp": 32
         }
       }
+    },
+    "tensorflow_mlp": {
+      "model_name": "TensorFlow Keras MLP (128-64-32)",
+      "model_type": "SequentialMLP",
+      "model_path": "models/deep_learning/fraudsentinel_mlp.keras",
+      "scaler_path": "models/deep_learning/mlp_scaler.joblib",
+      "feature_order_path": "models/deep_learning/feature_order.json",
+      "training_dataset": "data/processed/fraudsentinel_train.csv",
+      "training_rows": 14000,
+      "feature_count": 44,
+      "class_weight": {
+        "0": 0.5073566717402334,
+        "1": 34.48275862068966
+      },
+      "optimizer": "adam",
+      "learning_rate": 0.001,
+      "operating_threshold": 0.2,
+      "validation_metrics": {
+        "threshold": 0.2,
+        "accuracy": 0.733,
+        "precision": 0.0238,
+        "recall": 0.4524,
+        "f1": 0.0453,
+        "roc_auc": 0.5918,
+        "pr_auc": 0.024,
+        "false_positive_rate": 0.263,
+        "false_negative_rate": 0.5476,
+        "confusion_matrix": {
+          "tn": 2180,
+          "fp": 778,
+          "fn": 23,
+          "tp": 19
+        }
+      },
+      "internal_test_metrics": {
+        "threshold": 0.2,
+        "accuracy": 0.9787,
+        "precision": 0.1429,
+        "recall": 0.0169,
+        "f1": 0.0303,
+        "roc_auc": 0.5568,
+        "pr_auc": 0.0303,
+        "false_positive_rate": 0.002,
+        "false_negative_rate": 0.9831,
+        "confusion_matrix": {
+          "tn": 2935,
+          "fp": 6,
+          "fn": 58,
+          "tp": 1
+        }
+      }
     }
   },
-  "recommended_primary_model": "random_forest"
+  "recommended_primary_model": "logistic_regression"
 }
