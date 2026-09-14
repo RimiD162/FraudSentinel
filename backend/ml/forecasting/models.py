@@ -270,7 +270,7 @@ class HoltWintersModel:
 
     # ── Trend direction ───────────────────────────────────────────
 
-    def get_trend_direction(self, threshold: float = 0.01) -> str:
+    def get_trend_direction(self, threshold: float = 0.001) -> str:
         """Classify the trend component as rising, falling, or stable.
 
         Uses the absolute trend slope relative to the current level.
@@ -291,14 +291,14 @@ class HoltWintersModel:
     def get_params(self) -> dict:
         """Return model parameters as a dict (JSON-serializable)."""
         return {
-            "alpha": round(self.alpha, 6),
-            "beta": round(self.beta, 6),
-            "gamma": round(self.gamma, 6),
-            "level": round(self.level, 4),
-            "trend": round(self.trend, 4),
+            "alpha": float(self.alpha),
+            "beta": float(self.beta),
+            "gamma": float(self.gamma),
+            "level": float(self.level),
+            "trend": float(self.trend),
             "seasonal_period": self.seasonal_period,
-            "seasonals": [round(float(s), 4) for s in self.seasonals],
-            "residual_std": round(self._residual_std, 4),
+            "seasonals": [float(s) for s in self.seasonals],
+            "residual_std": float(self._residual_std),
         }
 
     def save_params(self, path: str | Path) -> None:
