@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 
-def test_analyze_legitimate_transaction(client: TestClient):
+def test_analyze_legitimate_transaction(client: TestClient, analyst_headers: dict[str, str]):
     payload = {
         "id": "T_TEST_LEGIT_1",
         "customer_id": "C_TEST_1",
@@ -15,7 +15,7 @@ def test_analyze_legitimate_transaction(client: TestClient):
         "device_type": "mobile",
         "previous_transactions_count": 10,
     }
-    response = client.post("/api/v1/transactions/analyze", json=payload)
+    response = client.post("/api/v1/transactions/analyze", json=payload, headers=analyst_headers)
     assert response.status_code == 200
     data = response.json()
 
@@ -39,7 +39,7 @@ def test_analyze_legitimate_transaction(client: TestClient):
     assert "fraud_probability" in data["tensorflow_mlp"]
 
 
-def test_analyze_suspicious_fraud_transaction(client: TestClient):
+def test_analyze_suspicious_fraud_transaction(client: TestClient, analyst_headers: dict[str, str]):
     payload = {
         "id": "T_TEST_FRAUD_1",
         "customer_id": "C_TEST_FRAUD",
@@ -50,7 +50,7 @@ def test_analyze_suspicious_fraud_transaction(client: TestClient):
         "device_type": "POS",
         "previous_transactions_count": 0,
     }
-    response = client.post("/api/v1/transactions/analyze", json=payload)
+    response = client.post("/api/v1/transactions/analyze", json=payload, headers=analyst_headers)
     assert response.status_code == 200
     data = response.json()
 
@@ -60,15 +60,15 @@ def test_analyze_suspicious_fraud_transaction(client: TestClient):
     assert len(data["explanations"]) > 0
 
 
-def test_list_transactions_empty(client: TestClient):
-    response = client.get("/api/v1/transactions")
+def test_list_transactions_empty(client: TestClient, analyst_headers: dict[str, str]):
+    response = client.get("/api/v1/transactions", headers=analyst_headers)
     assert response.status_code == 200
     data = response.json()
     assert data["total"] == 0
     assert data["items"] == []
 
 
-def test_list_transactions_with_data(client: TestClient):
+def test_list_transactions_with_data(client: TestClient, analyst_headers: dict[str, str]):
     # Insert 2 transactions via analyze
     for i in range(2):
         client.post(
@@ -83,9 +83,10 @@ def test_list_transactions_with_data(client: TestClient):
                 "device_type": "mobile",
                 "previous_transactions_count": i,
             },
+            headers=analyst_headers,
         )
 
-    response = client.get("/api/v1/transactions?page=1&page_size=10")
+    response = client.get("/api/v1/transactions?page=1&page_size=10", headers=analyst_headers)
     assert response.status_code == 200
     data = response.json()
     assert data["total"] == 2

@@ -9,7 +9,9 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy.orm import Session
 
+from app.core.auth import require_viewer
 from app.core.database import get_db
+from app.models.user import User
 from app.schemas.alert import AlertListResponse, FraudAlertResponse
 from app.services.alert_service import AlertService, get_alert_service
 
@@ -37,6 +39,7 @@ def list_alerts(
     start_date: Optional[datetime] = Query(None, description="Start date filter"),
     end_date: Optional[datetime] = Query(None, description="End date filter"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_viewer),
     service: AlertService = Depends(get_alert_service),
 ) -> AlertListResponse:
     return service.get_alerts(
@@ -60,6 +63,7 @@ def list_alerts(
 def get_alert(
     alert_id: UUID = Path(..., description="Unique UUID of the fraud alert"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_viewer),
     service: AlertService = Depends(get_alert_service),
 ) -> FraudAlertResponse:
     alert = service.get_alert_by_id(db=db, alert_id=alert_id)

@@ -7,7 +7,9 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from app.core.auth import require_analyst, require_viewer
 from app.core.database import get_db
+from app.models.user import User
 from app.schemas.transaction import (
     TransactionAnalyzeResponse,
     TransactionCreate,
@@ -32,6 +34,7 @@ router = APIRouter()
 def analyze_transaction(
     payload: TransactionCreate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst),
     service: TransactionService = Depends(get_transaction_service),
 ) -> TransactionAnalyzeResponse:
     try:
@@ -61,6 +64,7 @@ def list_transactions(
     min_amount: Optional[float] = Query(None, ge=0.0, description="Minimum amount"),
     max_amount: Optional[float] = Query(None, ge=0.0, description="Maximum amount"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_viewer),
     service: TransactionService = Depends(get_transaction_service),
 ) -> TransactionListResponse:
     return service.get_transactions(

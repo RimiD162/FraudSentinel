@@ -117,24 +117,49 @@ def seed_roles(db: Session) -> dict[str, Role]:
     return roles
 
 
-def seed_admin_user(db: Session, admin_role: Role) -> User:
-    """Create a default admin user if it doesn't exist."""
-    user = db.query(User).filter(User.email == DEFAULT_ADMIN_EMAIL).first()
-    if not user:
-        user = User(
-            id=uuid.uuid4(),
-            email=DEFAULT_ADMIN_EMAIL,
-            hashed_password=DEFAULT_ADMIN_PASSWORD_HASH,
-            full_name="System Administrator",
-            role_id=admin_role.id,
-            is_active=True,
-        )
-        db.add(user)
-        db.flush()
-        print(f"✅ Created admin user: {DEFAULT_ADMIN_EMAIL}")
-    else:
-        print(f"✅ Admin user already exists: {DEFAULT_ADMIN_EMAIL}")
-    return user
+def seed_default_users(db: Session, roles: dict[str, Role]) -> list[User]:
+    """Create default admin, analyst, and viewer users if they don't exist."""
+    from app.core.security import get_password_hash
+
+    users_data = [
+        {
+            "email": "admin@fraudsentinel.com",
+            "password": "admin123",
+            "full_name": "System Administrator",
+            "role": roles["admin"],
+        },
+        {
+            "email": "analyst@fraudsentinel.com",
+            "password": "analyst123",
+            "full_name": "Senior Fraud Analyst",
+            "role": roles["analyst"],
+        },
+        {
+            "email": "viewer@fraudsentinel.com",
+            "password": "viewer123",
+            "full_name": "Auditor & Compliance Viewer",
+            "role": roles["viewer"],
+        },
+    ]
+    created = []
+    for udata in users_data:
+        user = db.query(User).filter(User.email == udata["email"]).first()
+        if not user:
+            user = User(
+                id=uuid.uuid4(),
+                email=udata["email"],
+                hashed_password=get_password_hash(udata["password"]),
+                full_name=udata["full_name"],
+                role_id=udata["role"].id,
+                is_active=True,
+            )
+            db.add(user)
+            created.append(user)
+            print(f"✅ Created default user: {udata['email']} ({udata['role'].name})")
+        else:
+            print(f"✅ User already exists: {udata['email']}")
+    db.flush()
+    return created
 
 
 def seed_transactions_from_csv(db: Session) -> tuple[int, int, int]:
@@ -345,7 +370,7 @@ def main() -> None:
     db = SessionLocal()
     try:
         roles = seed_roles(db)
-        admin_user = seed_admin_user(db, roles["admin"])
+        default_users = seed_default_users(db, roles)
         seed_transactions_from_csv(db)
         seed_fraud_alerts(db)
         seed_model_predictions(db)

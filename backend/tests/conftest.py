@@ -17,6 +17,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
 
 from app.core.database import Base
+from app.core.security import create_access_token, get_password_hash
 from app.models import (  # noqa: F401 — importing registers models with Base.metadata
     AuditLog,
     Customer,
@@ -31,7 +32,6 @@ from app.models import (  # noqa: F401 — importing registers models with Base.
 
 
 # SQLite in-memory engine for testing
-# We enable check_same_thread=False for SQLite compatibility with sessionmaker
 TEST_DATABASE_URL = "sqlite:///:memory:"
 
 test_engine = create_engine(
@@ -85,13 +85,40 @@ def sample_admin_role(db_session: Session) -> Role:
 
 
 @pytest.fixture
-def sample_user(db_session: Session, sample_role: Role) -> User:
-    """Create and return a sample user with analyst role."""
+def sample_viewer_role(db_session: Session) -> Role:
+    """Create and return a sample 'viewer' role."""
+    role = Role(name="viewer", description="Read-only access")
+    db_session.add(role)
+    db_session.commit()
+    db_session.refresh(role)
+    return role
+
+
+@pytest.fixture
+def admin_user(db_session: Session, sample_admin_role: Role) -> User:
+    """Create and return an admin user with hashed password."""
+    user = User(
+        id=uuid.uuid4(),
+        email="admin@test.com",
+        hashed_password=get_password_hash("admin123"),
+        full_name="Admin User",
+        role_id=sample_admin_role.id,
+        is_active=True,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
+@pytest.fixture
+def analyst_user(db_session: Session, sample_role: Role) -> User:
+    """Create and return an analyst user with hashed password."""
     user = User(
         id=uuid.uuid4(),
         email="analyst@test.com",
-        hashed_password="$2b$12$fakehash",
-        full_name="Test Analyst",
+        hashed_password=get_password_hash("analyst123"),
+        full_name="Analyst User",
         role_id=sample_role.id,
         is_active=True,
     )
@@ -99,6 +126,80 @@ def sample_user(db_session: Session, sample_role: Role) -> User:
     db_session.commit()
     db_session.refresh(user)
     return user
+
+
+@pytest.fixture
+def viewer_user(db_session: Session, sample_viewer_role: Role) -> User:
+    """Create and return a viewer user with hashed password."""
+    user = User(
+        id=uuid.uuid4(),
+        email="viewer@test.com",
+        hashed_password=get_password_hash("viewer123"),
+        full_name="Viewer User",
+        role_id=sample_viewer_role.id,
+        is_active=True,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
+@pytest.fixture
+def sample_user(analyst_user: User) -> User:
+    """Alias for backwards compatibility with existing test fixtures."""
+    return analyst_user
+
+
+@pytest.fixture
+def admin_token(admin_user: User) -> str:
+    """Generate signed JWT token for admin user."""
+    return create_access_token({
+        "sub": str(admin_user.id),
+        "user_id": str(admin_user.id),
+        "email": admin_user.email,
+        "role": "admin",
+    })
+
+
+@pytest.fixture
+def analyst_token(analyst_user: User) -> str:
+    """Generate signed JWT token for analyst user."""
+    return create_access_token({
+        "sub": str(analyst_user.id),
+        "user_id": str(analyst_user.id),
+        "email": analyst_user.email,
+        "role": "analyst",
+    })
+
+
+@pytest.fixture
+def viewer_token(viewer_user: User) -> str:
+    """Generate signed JWT token for viewer user."""
+    return create_access_token({
+        "sub": str(viewer_user.id),
+        "user_id": str(viewer_user.id),
+        "email": viewer_user.email,
+        "role": "viewer",
+    })
+
+
+@pytest.fixture
+def admin_headers(admin_token: str) -> dict[str, str]:
+    """HTTP headers for admin authentication."""
+    return {"Authorization": f"Bearer {admin_token}"}
+
+
+@pytest.fixture
+def analyst_headers(analyst_token: str) -> dict[str, str]:
+    """HTTP headers for analyst authentication."""
+    return {"Authorization": f"Bearer {analyst_token}"}
+
+
+@pytest.fixture
+def viewer_headers(viewer_token: str) -> dict[str, str]:
+    """HTTP headers for viewer authentication."""
+    return {"Authorization": f"Bearer {viewer_token}"}
 
 
 @pytest.fixture
@@ -175,4 +276,3 @@ def client(db_session: Session):
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
-

@@ -4,8 +4,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 
-def test_get_analytics_summary(client: TestClient):
-    response = client.get("/api/v1/analytics/summary")
+def test_get_analytics_summary(client: TestClient, analyst_headers: dict[str, str]):
+    response = client.get("/api/v1/analytics/summary", headers=analyst_headers)
     assert response.status_code == 200
     data = response.json()
 
@@ -20,8 +20,8 @@ def test_get_analytics_summary(client: TestClient):
     assert "generated_at" in data
 
 
-def test_get_analytics_trends(client: TestClient):
-    response = client.get("/api/v1/analytics/trends")
+def test_get_analytics_trends(client: TestClient, analyst_headers: dict[str, str]):
+    response = client.get("/api/v1/analytics/trends", headers=analyst_headers)
     assert response.status_code == 200
     data = response.json()
 

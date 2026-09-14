@@ -5,8 +5,10 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 from sqlalchemy.orm import Session
 
+from app.core.auth import require_viewer
 from app.core.database import get_db
 from app.models.transaction import Transaction
+from app.models.user import User
 from app.schemas.reasoning import ReasoningResponse
 from app.services.reasoning_service import ReasoningService, get_reasoning_service
 
@@ -26,6 +28,7 @@ router = APIRouter()
 def get_transaction_reasoning(
     transaction_id: str = Path(..., description="Transaction identifier (e.g. 'T000001')"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_viewer),
     service: ReasoningService = Depends(get_reasoning_service),
 ) -> ReasoningResponse:
     # 1. Try fetching from database

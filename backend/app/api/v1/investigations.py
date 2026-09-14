@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from app.core.auth import require_analyst
+from app.models.user import User
 from app.schemas.investigation import SearchRequest, SearchResponse
 from app.services.search_service import SearchService, get_search_service
 
@@ -22,6 +24,7 @@ router = APIRouter()
 )
 def search_investigation_graph(
     payload: SearchRequest,
+    current_user: User = Depends(require_analyst),
     service: SearchService = Depends(get_search_service),
 ) -> SearchResponse:
     try:

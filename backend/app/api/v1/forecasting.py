@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 
+from app.core.auth import require_viewer
+from app.models.user import User
 from app.schemas.forecasting import ForecastHorizonResponse, ForecastListResponse
 from app.services.forecasting_service import (
     ForecastingService,
@@ -20,6 +22,7 @@ router = APIRouter()
     description="Returns metadata on available forecasting horizons, model evaluation summaries, and projections.",
 )
 def get_forecasts(
+    current_user: User = Depends(require_viewer),
     service: ForecastingService = Depends(get_forecasting_service),
 ) -> ForecastListResponse:
     return service.get_summary()
@@ -33,6 +36,7 @@ def get_forecasts(
 )
 def get_horizon_forecast(
     horizon: str = Path(..., description="Horizon length: '7', '14', '30' (or '7d', '14d', '30d')"),
+    current_user: User = Depends(require_viewer),
     service: ForecastingService = Depends(get_forecasting_service),
 ) -> ForecastHorizonResponse:
     # Clean string format

@@ -6,8 +6,8 @@ from fastapi.testclient import TestClient
 from app.models.transaction import Transaction
 
 
-def test_get_reasoning_for_transaction(client: TestClient, sample_transaction: Transaction):
-    response = client.get(f"/api/v1/reasoning/{sample_transaction.id}")
+def test_get_reasoning_for_transaction(client: TestClient, sample_transaction: Transaction, analyst_headers: dict[str, str]):
+    response = client.get(f"/api/v1/reasoning/{sample_transaction.id}", headers=analyst_headers)
     assert response.status_code == 200
     data = response.json()
 
@@ -26,8 +26,8 @@ def test_get_reasoning_for_transaction(client: TestClient, sample_transaction: T
     assert "bayesian_reasoning" in data
 
 
-def test_get_reasoning_for_unknown_transaction_fallback(client: TestClient):
-    response = client.get("/api/v1/reasoning/TX_NEW_123")
+def test_get_reasoning_for_unknown_transaction_fallback(client: TestClient, analyst_headers: dict[str, str]):
+    response = client.get("/api/v1/reasoning/TX_NEW_123", headers=analyst_headers)
     assert response.status_code == 200
     data = response.json()
     assert data["transaction_id"] == "TX_NEW_123"
