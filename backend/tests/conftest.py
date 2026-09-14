@@ -1,8 +1,12 @@
-"""
-Pytest fixtures for FraudSentinel database tests.
+import sys
+from pathlib import Path
 
-Uses SQLite in-memory database — no PostgreSQL required for test runs.
-"""
+# Ensure backend and project root are in sys.path
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
+_PROJECT_ROOT = _BACKEND_DIR.parent
+for _p in [str(_BACKEND_DIR), str(_PROJECT_ROOT)]:
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 import uuid
 from datetime import datetime, timezone
@@ -10,6 +14,7 @@ from datetime import datetime, timezone
 import pytest
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.pool import StaticPool
 
 from app.core.database import Base
 from app.models import (  # noqa: F401 — importing registers models with Base.metadata
@@ -32,6 +37,7 @@ TEST_DATABASE_URL = "sqlite:///:memory:"
 test_engine = create_engine(
     TEST_DATABASE_URL,
     connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
     echo=False,
 )
 
@@ -150,3 +156,23 @@ def sample_fraud_alert(
     db_session.commit()
     db_session.refresh(alert)
     return alert
+
+
+@pytest.fixture
+def client(db_session: Session):
+    """FastAPI TestClient fixture with overridden DB session."""
+    from fastapi.testclient import TestClient
+    from app.core.database import get_db
+    from app.main import app
+
+    def override_get_db():
+        try:
+            yield db_session
+        finally:
+            pass
+
+    app.dependency_overrides[get_db] = override_get_db
+    with TestClient(app) as test_client:
+        yield test_client
+    app.dependency_overrides.clear()
+
