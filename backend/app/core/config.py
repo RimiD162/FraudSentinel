@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     # PostgreSQL Database Connection String loaded from environment / .env
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/fraudsentinel"
 
+    # SQLAlchemy echo mode (log all SQL statements) - useful for debugging
+    DB_ECHO: bool = False
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

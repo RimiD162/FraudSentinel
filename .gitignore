@@ -22,3 +22,11 @@ pnpm-debug.log*
 # IDE & Editor folders
 .vscode/
 .idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+.pytest_cache/
