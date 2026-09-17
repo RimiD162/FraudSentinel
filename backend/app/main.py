@@ -1,4 +1,6 @@
+import logging
 import sys
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 # Ensure backend and project root are in sys.path
@@ -12,12 +14,40 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
+from app.core.database import Base, SessionLocal, engine
+from app.models import AuditLog, Customer, Forecast, FraudAlert, Investigation, ModelPrediction, Role, Transaction, User
 from app.schemas.health import HealthResponse, RootResponse
+
+logger = logging.getLogger("fraudsentinel")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan: initialize database tables and seed baseline admin/analyst/viewer users if needed."""
+    try:
+        # Create tables if not present
+        Base.metadata.create_all(bind=engine)
+        db = SessionLocal()
+        try:
+            from scripts.seed import seed_default_users, seed_roles
+            roles = seed_roles(db)
+            seed_default_users(db, roles)
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logger.warning("Startup seeding check notice: %s", e)
+        finally:
+            db.close()
+    except Exception as err:
+        logger.warning("Database startup init notice: %s", err)
+    yield
+
 
 app = FastAPI(
     title="FraudSentinel API",
     description="Fraud Detection, Risk Analysis & Forecasting System API",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 # Enable CORS for local development with frontend applications

@@ -1,18 +1,49 @@
-import React, { createContext, useContext, useState, useMemo } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import { ROLE_PERMISSIONS, ROLES } from '../config/permissions.js';
+import { login, setAuthToken } from '../services/api.js';
 
 const RoleContext = createContext(null);
 
+const ROLE_CREDENTIALS = {
+  admin: { email: 'admin@fraudsentinel.com', password: 'admin123' },
+  analyst: { email: 'analyst@fraudsentinel.com', password: 'analyst123' },
+  viewer: { email: 'viewer@fraudsentinel.com', password: 'viewer123' },
+};
+
 /**
  * RoleProvider Component
- * 
- * NOTE: Role switching in this application is an interactive demo affordance
- * to test and preview role-based UI behavior without requiring a backend or real authentication.
+ * Manages active role permissions and automatically synchronizes JWT authentication
+ * with the FastAPI REST API backend.
  */
 export function RoleProvider({ children }) {
-  // Default role configured via VITE_DEFAULT_ROLE env variable or 'admin'
   const defaultRole = (import.meta.env?.VITE_DEFAULT_ROLE || 'admin').toLowerCase();
   const [role, setRole] = useState(ROLE_PERMISSIONS[defaultRole] ? defaultRole : 'admin');
+  const [authUser, setAuthUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(false);
+
+  // Sync active role with FastAPI JWT authentication backend
+  useEffect(() => {
+    let isMounted = true;
+    async function syncBackendAuth() {
+      const creds = ROLE_CREDENTIALS[role] || ROLE_CREDENTIALS.admin;
+      setAuthLoading(true);
+      try {
+        const res = await login(creds.email, creds.password);
+        if (isMounted && res && res.access_token) {
+          setAuthUser(res);
+        }
+      } catch (err) {
+        console.warn(`[RoleContext] Auto-auth for ${role} (${creds.email}):`, err.message);
+      } finally {
+        if (isMounted) setAuthLoading(false);
+      }
+    }
+
+    syncBackendAuth();
+    return () => {
+      isMounted = false;
+    };
+  }, [role]);
 
   const value = useMemo(() => {
     const currentPermissions = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.admin;
@@ -30,12 +61,14 @@ export function RoleProvider({ children }) {
       roles: ROLES,
       roleMeta: currentRoleMeta,
       permissions: currentPermissions,
+      authUser,
+      authLoading,
       getPermission,
       isViewOnly,
       isAllowed,
       isFull,
     };
-  }, [role]);
+  }, [role, authUser, authLoading]);
 
   return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>;
 }
