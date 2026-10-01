@@ -51,7 +51,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Main Footer Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-10 pb-12 border-b border-[#EAE2CE]">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-10">
           {/* Brand Left Column */}
           <div className="lg:col-span-2 space-y-4">
             <Link
@@ -96,14 +96,6 @@ export default function Footer() {
               </ul>
             </div>
           ))}
-        </div>
-
-        {/* Copyright & Disclaimer Bottom Bar */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#8C8270]">
-          <p>© {new Date().getFullYear()} FraudSentinel Technologies Inc. All rights reserved.</p>
-          <p className="text-[#8C8270]">
-            Enterprise Fraud Detection Platform • White & Gold Edition
-          </p>
         </div>
 
       </div>

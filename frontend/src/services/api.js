@@ -126,6 +126,23 @@ export async function login(email, password) {
   return data;
 }
 
+export async function registerUser({ email, password, full_name, role = 'analyst' }) {
+  const data = await request('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify({ email, password, full_name, role }),
+  });
+  if (data?.access_token) {
+    setAuthToken(data.access_token, data.role);
+    currentUser = {
+      id: data.user_id,
+      email: data.email,
+      full_name: data.full_name,
+      role: data.role,
+    };
+  }
+  return data;
+}
+
 export async function loginRole(roleName = 'admin') {
   const normalized = roleName.toLowerCase();
   const creds = ROLE_CREDENTIALS[normalized] || ROLE_CREDENTIALS.admin;

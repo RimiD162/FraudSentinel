@@ -27,7 +27,7 @@ export default function NavBar() {
         {/* CTA Action */}
         <div className="flex items-center gap-3">
           <Link
-            to="/dashboard"
+            to="/login"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-600 hover:to-amber-700 text-white text-sm font-semibold transition-all shadow-md shadow-amber-500/25 hover:shadow-lg hover:shadow-amber-500/35 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-amber-500"
           >
             Get Started

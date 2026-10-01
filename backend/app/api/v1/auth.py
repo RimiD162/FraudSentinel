@@ -107,6 +107,74 @@ def login(
     )
 
 
+@router.post(
+    "/register",
+    response_model=TokenResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Register New Analyst Account",
+    description="Self-service registration for Fraud Analysts.",
+)
+def register(
+    payload: UserCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> TokenResponse:
+    client_ip = request.client.host if request.client else None
+    email_clean = payload.email.strip().lower()
+
+    existing = db.query(User).filter(User.email.ilike(email_clean)).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"An account with email '{email_clean}' already exists.",
+        )
+
+    role = db.query(Role).filter(Role.name == "analyst").first()
+    if not role:
+        role = db.query(Role).first()
+
+    raw_password = payload.password or "analyst123"
+    new_user = User(
+        email=email_clean,
+        hashed_password=get_password_hash(raw_password),
+        full_name=payload.full_name.strip() if payload.full_name else email_clean.split("@")[0].title(),
+        role_id=role.id if role else None,
+        is_active=True,
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    role_name = new_user.role.name if new_user.role else "analyst"
+    expires_delta = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    token_data = {
+        "sub": str(new_user.id),
+        "user_id": str(new_user.id),
+        "email": new_user.email,
+        "role": role_name,
+    }
+    access_token = create_access_token(data=token_data, expires_delta=expires_delta)
+
+    log_audit_event(
+        db=db,
+        action="AUTH_REGISTER_SUCCESS",
+        user_id=new_user.id,
+        resource_type="auth",
+        details={"email": new_user.email, "role": role_name},
+        ip_address=client_ip,
+    )
+
+    return TokenResponse(
+        access_token=access_token,
+        token_type="bearer",
+        expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        user_id=str(new_user.id),
+        email=new_user.email,
+        full_name=new_user.full_name,
+        role=role_name,
+    )
+
+
 @router.get(
     "/me",
     response_model=UserResponse,

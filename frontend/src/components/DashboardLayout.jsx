@@ -3,7 +3,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar.jsx';
 import RoleSwitcher from './RoleSwitcher.jsx';
 import { useRole } from '../context/RoleContext.jsx';
-import { ShieldCheck, ShieldAlert, Eye, Home } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, Eye, Home, LogOut } from 'lucide-react';
 
 /**
  * DashboardLayout Component
@@ -11,7 +11,7 @@ import { ShieldCheck, ShieldAlert, Eye, Home } from 'lucide-react';
  * and responsive scrollable main container.
  */
 export default function DashboardLayout() {
-  const { role, currentUser, apiStatus } = useRole();
+  const { role, currentUser, apiStatus, logout } = useRole();
   const location = useLocation();
 
   const getRoleBadge = () => {
@@ -102,6 +102,17 @@ export default function DashboardLayout() {
             <div className="min-[901px]:hidden w-40">
               <RoleSwitcher compact />
             </div>
+
+            {/* Sign Out / Switch Account Button */}
+            <Link
+              to="/login"
+              onClick={() => logout()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#161A22] hover:bg-[#222734] border border-[#222734] text-xs font-semibold text-gray-300 hover:text-white transition-colors"
+              title="Sign Out / Switch Role Portal"
+            >
+              <LogOut className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden md:inline">Sign Out</span>
+            </Link>
           </div>
         </header>
 

@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { ROLE_PERMISSIONS, ROLES } from '../config/permissions.js';
-import { loginRole, login, getMe, getHealth, setAuthToken } from '../services/api.js';
+import { loginRole, login, getMe, getHealth, setAuthToken, clearAuthToken } from '../services/api.js';
 
 const RoleContext = createContext(null);
 
 export const ROLE_CREDENTIALS = {
-  admin: { email: 'admin@fraudsentinel.com', password: 'admin123' },
-  analyst: { email: 'analyst@fraudsentinel.com', password: 'analyst123' },
-  viewer: { email: 'viewer@fraudsentinel.com', password: 'viewer123' },
+  admin: { email: 'admin@fraudsentinel.com', password: 'admin123', name: 'System Administrator' },
+  analyst: { email: 'analyst@fraudsentinel.com', password: 'analyst123', name: 'Lead Fraud Analyst' },
+  viewer: { email: 'viewer@fraudsentinel.com', password: 'viewer123', name: 'Compliance Auditor' },
 };
 
 /**
@@ -16,8 +16,8 @@ export const ROLE_CREDENTIALS = {
  * with the FastAPI backend.
  */
 export function RoleProvider({ children }) {
-  const defaultRole = (import.meta.env?.VITE_DEFAULT_ROLE || 'admin').toLowerCase();
-  const [role, setRoleState] = useState(ROLE_PERMISSIONS[defaultRole] ? defaultRole : 'admin');
+  const defaultRole = (import.meta.env?.VITE_DEFAULT_ROLE || 'analyst').toLowerCase();
+  const [role, setRoleState] = useState(ROLE_PERMISSIONS[defaultRole] ? defaultRole : 'analyst');
   const [currentUser, setCurrentUser] = useState(null);
   const [apiStatus, setApiStatus] = useState('connecting'); // 'online' | 'connecting' | 'offline'
   const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -55,6 +55,68 @@ export function RoleProvider({ children }) {
     } finally {
       setIsAuthenticating(false);
     }
+  }, []);
+
+  // Explicit login with email and password
+  const loginWithCredentials = useCallback(async (email, password) => {
+    setIsAuthenticating(true);
+    setAuthError(null);
+    try {
+      const res = await login(email, password);
+      if (res?.access_token) {
+        const userRole = (res.role || 'admin').toLowerCase();
+        if (ROLE_PERMISSIONS[userRole]) {
+          setRoleState(userRole);
+        }
+        setCurrentUser({
+          id: res.user_id,
+          email: res.email,
+          fullName: res.full_name,
+          role: res.role,
+        });
+        setApiStatus('online');
+        return res;
+      }
+      throw new Error('No access token received from authentication server.');
+    } catch (err) {
+      setAuthError(err.message);
+      throw err;
+    } finally {
+      setIsAuthenticating(false);
+    }
+  }, []);
+
+  // Explicit register with email, password, full name
+  const registerWithCredentials = useCallback(async (email, password, fullName = '') => {
+    setIsAuthenticating(true);
+    setAuthError(null);
+    try {
+      const res = await registerUser({ email, password, full_name: fullName, role: 'analyst' });
+      if (res?.access_token) {
+        setRoleState('analyst');
+        setCurrentUser({
+          id: res.user_id,
+          email: res.email,
+          fullName: res.full_name,
+          role: res.role,
+        });
+        setApiStatus('online');
+        return res;
+      }
+      throw new Error('Registration did not return an access token.');
+    } catch (err) {
+      setAuthError(err.message);
+      throw err;
+    } finally {
+      setIsAuthenticating(false);
+    }
+  }, []);
+
+  // Explicit logout
+  const logout = useCallback(() => {
+    clearAuthToken();
+    setCurrentUser(null);
+    setRoleState('analyst');
   }, []);
 
   useEffect(() => {
@@ -109,12 +171,15 @@ export function RoleProvider({ children }) {
       isAuthenticating,
       authError,
       syncRoleAuth,
+      loginWithCredentials,
+      registerWithCredentials,
+      logout,
       getPermission,
       isViewOnly,
       isAllowed,
       isFull,
     };
-  }, [role, currentUser, isAuthenticating, apiStatus, authError, syncRoleAuth]);
+  }, [role, currentUser, isAuthenticating, apiStatus, authError, syncRoleAuth, loginWithCredentials, registerWithCredentials, logout]);
 
   return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>;
 }

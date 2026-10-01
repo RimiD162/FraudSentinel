@@ -37,14 +37,14 @@ export default function Hero() {
 
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
               <Link
-                to="/dashboard"
+                to="/login"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-sm transition-all shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/35 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-amber-500"
               >
                 Get Started
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
-                to="/dashboard"
+                to="/login"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-white hover:bg-[#FAF6EC] text-[#1A1612] font-bold text-sm border border-[#DFC78E] transition-all shadow-sm hover:shadow-md hover:border-amber-400 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-amber-500"
               >
                 <LayoutDashboard className="w-4 h-4 text-amber-600" />

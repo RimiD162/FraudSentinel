@@ -6,6 +6,7 @@ import DashboardLayout from './components/DashboardLayout.jsx';
 
 // Pages
 import Landing from './pages/Landing.jsx';
+import Login from './pages/Login.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import AnalyzeTransaction from './pages/AnalyzeTransaction.jsx';
 import Transactions from './pages/Transactions.jsx';
@@ -17,7 +18,7 @@ import Settings from './pages/Settings.jsx';
 
 /**
  * Main Application Root
- * Sets up client-side routing and provides global demo role context.
+ * Sets up client-side routing, public landing/auth pages, and role-guarded dashboard paths.
  */
 export default function App() {
   return (
@@ -26,6 +27,10 @@ export default function App() {
         <Routes>
           {/* Public Landing Page */}
           <Route path="/" element={<Landing />} />
+
+          {/* Dedicated Multi-Role Authentication Page */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/auth" element={<Login />} />
 
           {/* Protected Dashboard Routes */}
           <Route path="/dashboard" element={<DashboardLayout />}>
