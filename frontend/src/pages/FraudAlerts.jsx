@@ -7,6 +7,7 @@ import { getAlerts, getAlertById, getReasoning, resolveAlert, bulkResolveAlerts,
  * FraudAlerts Page Component
  * Centralized queue of automated threat alerts connected to REST API with
  * severity filtering, quick actions, and deep incident reasoning inspection.
+ * Styled in luxury White & Gold theme.
  */
 export default function FraudAlerts() {
   const isViewOnly = useViewOnly();
@@ -98,31 +99,43 @@ export default function FraudAlerts() {
             : 'Recent';
 
           return {
-            id: String(item.id).slice(0, 8).toUpperCase(),
+            id: item.alert_id || item.id?.slice(0, 8) || 'ALT-UNK',
             rawId: item.id,
-            transactionId: item.transaction_id || (tx?.id ? tx.id : 'TXN-000'),
+            transactionId: item.transaction_id || tx?.id || 'TXN-000',
             user: customerStr,
             severity: sevFormatted,
             amount: amt,
-            reason: item.description || 'Automated ML heuristic threshold exceeded',
+            reason: item.reason || item.title || 'Multi-model rule anomaly triggered',
             timestamp: timeStr,
-            status: item.status ? item.status.replace('_', ' ').toUpperCase() : 'FLAGGED',
-            raw: item,
+            status: item.status ? item.status.toUpperCase() : 'NEW',
           };
         });
         setAlerts(mapped);
         setActiveCount(res.total || mapped.length);
+      } else if (Array.isArray(res)) {
+        const mapped = res.map((item) => ({
+          id: item.alert_id || item.id?.slice(0, 8),
+          rawId: item.id,
+          transactionId: item.transaction_id || 'TXN-UNK',
+          user: item.customer_id ? `Customer #${item.customer_id}` : 'Flagged User',
+          severity: item.severity ? item.severity.charAt(0).toUpperCase() + item.severity.slice(1) : 'Medium',
+          amount: typeof item.amount === 'number' ? `$${item.amount.toFixed(2)}` : '$1,000.00',
+          reason: item.reason || 'Anomaly detection triggered',
+          timestamp: 'Recent',
+          status: item.status || 'NEW',
+        }));
+        setAlerts(mapped);
+        setActiveCount(mapped.length);
       } else {
         setAlerts(fallbackAlerts);
         setActiveCount(fallbackAlerts.length);
       }
     } catch (err) {
-      console.warn('API error fetching alerts, showing cached fallback:', err.message);
-      setError('Live Alerts API offline or reconnecting. Displaying cached security incidents.');
-      const filtered = fallbackAlerts.filter((a) => {
-        if (filterSeverity === 'All') return true;
-        return a.severity.toLowerCase() === filterSeverity.toLowerCase();
-      });
+      console.warn('API error fetching alerts:', err.message);
+      setError('Live API unreachable. Displaying cached alert records.');
+      const filtered = fallbackAlerts.filter(
+        (a) => filterSeverity === 'All' || a.severity.toLowerCase() === filterSeverity.toLowerCase()
+      );
       setAlerts(filtered);
       setActiveCount(filtered.length);
     } finally {
@@ -136,16 +149,11 @@ export default function FraudAlerts() {
 
   const handleInspectAlert = async (alertItem) => {
     setSelectedAlert(alertItem);
-    setIsLoadingReasoning(true);
     setReasoningData(null);
+    setIsLoadingReasoning(true);
     try {
-      if (alertItem.transactionId) {
-        const data = await getReasoning(alertItem.transactionId);
-        setReasoningData(data);
-      } else if (alertItem.rawId) {
-        const details = await getAlertById(alertItem.rawId);
-        setReasoningData(details);
-      }
+      const res = await getReasoning(alertItem.transactionId);
+      setReasoningData(res);
     } catch (err) {
       console.warn('Reasoning data fetch for alert:', err.message);
     } finally {
@@ -155,7 +163,7 @@ export default function FraudAlerts() {
 
   const handleResolveAlert = async (alertItem) => {
     if (isViewOnly) return;
-    const alertId = alertItem.rawId || alertItem.id;
+    const alertId = alertItem.rawId || alertItem.id || alertItem;
     try {
       await resolveAlert(alertId);
     } catch (err) {
@@ -163,7 +171,7 @@ export default function FraudAlerts() {
     }
     setAlerts((prev) => prev.filter((a) => (a.rawId || a.id) !== alertId));
     setActiveCount((prev) => Math.max(0, prev - 1));
-    setActionNotification(`Incident ${alertItem.id} marked as RESOLVED in database and cleared from queue.`);
+    setActionNotification(`Incident marked as RESOLVED and cleared from queue.`);
     setTimeout(() => setActionNotification(null), 4000);
   };
 
@@ -197,7 +205,7 @@ export default function FraudAlerts() {
     }
     setAlerts((prev) => prev.filter((a) => (a.rawId || a.id) !== alertId));
     setActiveCount((prev) => Math.max(0, prev - 1));
-    setActionNotification(`Marked ${alertItem.id} as False Positive. Feedback routed to model tuning loop.`);
+    setActionNotification(`Marked as False Positive. Feedback routed to model tuning loop.`);
     setTimeout(() => setActionNotification(null), 4000);
   };
 
@@ -206,13 +214,13 @@ export default function FraudAlerts() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1A1612] tracking-tight flex items-center gap-2.5">
             <span>Fraud Alerts</span>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+            <span className="px-3 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200">
               {activeCount} Active
             </span>
           </h1>
-          <p className="text-sm text-gray-400 mt-1 font-normal">
+          <p className="text-xs sm:text-sm text-[#5C5648] mt-1 font-normal">
             Real-time security alert queue detected by automated heuristic and ML models.
           </p>
         </div>
@@ -222,28 +230,19 @@ export default function FraudAlerts() {
           <button
             type="button"
             onClick={() => fetchAlertsData()}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#161A22] hover:bg-[#1C212B] border border-[#222734] text-xs font-medium text-gray-300 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white hover:bg-amber-50 border border-[#E5DCBE] hover:border-amber-400 text-xs font-bold text-[#5C5648] hover:text-amber-900 transition-colors shadow-2xs cursor-pointer"
             title="Refresh alerts"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-amber-600 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
-          </button>
-          <button
-            type="button"
-            disabled={isViewOnly}
-            onClick={() => alert('Bulk assigning analyst...')}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#161A22] hover:bg-[#1C212B] border border-[#222734] text-gray-300 text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <UserPlus className="w-3.5 h-3.5 text-blue-400" />
-            Assign Analyst
           </button>
           <button
             type="button"
             disabled={isViewOnly || alerts.length === 0}
             onClick={handleBulkResolve}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-bold transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
-            <CheckCircle2 className="w-3.5 h-3.5" />
+            <CheckCircle2 className="w-4 h-4" />
             Bulk Resolve
           </button>
         </div>
@@ -251,12 +250,12 @@ export default function FraudAlerts() {
 
       {/* Action Notification Banner */}
       {actionNotification && (
-        <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between text-xs text-emerald-400 animate-fadeIn">
+        <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between text-xs text-emerald-800 font-medium shadow-sm animate-fadeIn">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+            <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-600" />
             <span>{actionNotification}</span>
           </div>
-          <button onClick={() => setActionNotification(null)} className="text-emerald-400 hover:text-white">
+          <button onClick={() => setActionNotification(null)} className="text-emerald-700 hover:text-emerald-950 cursor-pointer">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -264,12 +263,12 @@ export default function FraudAlerts() {
 
       {/* Error / Offline Banner */}
       {error && (
-        <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center justify-between text-xs text-amber-400">
+        <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between text-xs text-amber-900 shadow-2xs">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <AlertCircle className="w-4 h-4 flex-shrink-0 text-amber-600" />
             <span>{error}</span>
           </div>
-          <button onClick={() => fetchAlertsData()} className="underline hover:text-amber-300">
+          <button onClick={() => fetchAlertsData()} className="font-bold underline hover:text-amber-950 cursor-pointer">
             Retry
           </button>
         </div>
@@ -283,10 +282,10 @@ export default function FraudAlerts() {
             type="button"
             disabled={isViewOnly}
             onClick={() => setFilterSeverity(sev)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
               filterSeverity.toLowerCase() === sev.toLowerCase()
-                ? 'bg-blue-600 text-white border-blue-500 font-semibold shadow-sm'
-                : 'bg-[#161A22] text-gray-400 border-[#222734] hover:text-white'
+                ? 'bg-gradient-to-r from-amber-500 to-yellow-600 text-white border-amber-500 shadow-sm'
+                : 'bg-white text-[#5C5648] border-[#E5DCBE] hover:border-amber-400 hover:bg-amber-50/50'
             } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {sev} Severity
@@ -295,68 +294,70 @@ export default function FraudAlerts() {
       </div>
 
       {/* Alerts Incident List */}
-      <div className="space-y-3">
+      <div className="space-y-3.5">
         {isLoading ? (
-          <div className="p-12 text-center bg-[#161A22] border border-[#222734] rounded-xl text-gray-400">
+          <div className="p-12 text-center bg-white border border-[#E5DCBE] rounded-2xl sm:rounded-3xl shadow-xl shadow-amber-500/5 text-[#8C8270]">
             <div className="flex flex-col items-center justify-center gap-2">
-              <Loader2 className="w-6 h-6 animate-spin text-rose-500" />
-              <span className="text-xs">Fetching active fraud incidents from REST API...</span>
+              <Loader2 className="w-6 h-6 animate-spin text-amber-600" />
+              <span className="text-xs font-bold">Fetching active fraud incidents from database...</span>
             </div>
           </div>
         ) : alerts.length === 0 ? (
-          <div className="p-12 text-center bg-[#161A22] border border-[#222734] rounded-xl text-gray-400">
-            <div className="flex flex-col items-center justify-center gap-1">
-              <ShieldAlert className="w-8 h-8 text-emerald-500 mb-1" />
-              <span className="text-sm font-semibold text-white">No active fraud alerts</span>
-              <span className="text-xs text-gray-500">All alerts in this filter category have been resolved</span>
+          <div className="p-12 text-center bg-white border border-[#E5DCBE] rounded-2xl sm:rounded-3xl shadow-xl shadow-amber-500/5 text-[#8C8270]">
+            <div className="flex flex-col items-center justify-center gap-2">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 mb-1">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <span className="text-base font-extrabold text-[#1A1612]">No active fraud alerts</span>
+              <span className="text-xs text-[#5C5648]">All alerts in this filter category have been resolved</span>
             </div>
           </div>
         ) : (
           alerts.map((alertItem) => (
             <div
               key={alertItem.id}
-              className="bg-[#161A22] border border-[#222734] rounded-xl p-5 shadow-sm hover:border-gray-700 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4"
+              className="bg-white border border-[#E5DCBE] hover:border-amber-400 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xl shadow-amber-500/5 hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-4"
             >
               <div className="space-y-1.5 flex-1 cursor-pointer" onClick={() => handleInspectAlert(alertItem)}>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-white hover:text-blue-400 transition-colors">
+                  <span className="font-mono text-xs font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                     {alertItem.id}
                   </span>
-                  <span className="text-gray-500 text-xs">•</span>
-                  <span className="font-mono text-xs text-blue-400">
+                  <span className="text-[#C4B99D] text-xs">•</span>
+                  <span className="font-mono text-xs text-[#5C5648] font-bold">
                     {alertItem.transactionId}
                   </span>
                   <span
-                    className={`px-2 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider ${
+                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${
                       alertItem.severity === 'Critical'
-                        ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                        ? 'bg-rose-50 text-rose-800 border border-rose-200'
                         : alertItem.severity === 'High'
-                        ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                        : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                        ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                        : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                     }`}
                   >
                     {alertItem.severity}
                   </span>
-                  <span className="text-xs text-gray-500 font-medium">
+                  <span className="text-xs text-[#8C8270] font-medium">
                     {alertItem.timestamp}
                   </span>
                 </div>
 
-                <div className="text-sm font-semibold text-white">
-                  {alertItem.amount} — {alertItem.user}
+                <div className="text-sm sm:text-base font-extrabold text-[#1A1612]">
+                  {alertItem.amount} — <span className="font-medium text-[#5C5648]">{alertItem.user}</span>
                 </div>
 
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-[#4A4438] leading-relaxed">
                   {alertItem.reason}
                 </p>
               </div>
 
               {/* Row Action Buttons */}
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex items-center gap-2 flex-shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-[#F2EBD9]">
                 <button
                   type="button"
                   onClick={() => handleInspectAlert(alertItem)}
-                  className="px-2.5 py-1.5 rounded-lg bg-[#0B0E14] hover:bg-[#222734] border border-[#222734] text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors"
+                  className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-xs font-bold text-amber-900 transition-colors cursor-pointer"
                   title="Inspect AI Reasoning & Incident Dossier"
                 >
                   Inspect
@@ -366,8 +367,8 @@ export default function FraudAlerts() {
                   type="button"
                   disabled={isViewOnly}
                   onClick={() => handleFalsePositive(alertItem)}
-                  className="px-3 py-1.5 rounded-lg bg-[#0B0E14] hover:bg-[#222734] border border-[#222734] text-xs font-medium text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={isViewOnly ? 'Disabled in View-only mode' : 'Mark False Positive'}
+                  className="px-3 py-1.5 rounded-xl bg-white hover:bg-amber-50 border border-[#E5DCBE] hover:border-amber-400 text-xs font-semibold text-[#5C5648] hover:text-amber-900 transition-colors disabled:opacity-50 cursor-pointer"
+                  title="Mark False Positive"
                 >
                   False Positive
                 </button>
@@ -376,8 +377,8 @@ export default function FraudAlerts() {
                   type="button"
                   disabled={isViewOnly}
                   onClick={() => handleBlockCard(alertItem)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600/10 hover:bg-rose-600/20 border border-rose-600/30 text-rose-400 text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={isViewOnly ? 'Disabled in View-only mode' : 'Block Card / Account'}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-800 text-xs font-bold transition-colors disabled:opacity-50 cursor-pointer"
+                  title="Block Card / Account"
                 >
                   <Ban className="w-3.5 h-3.5" />
                   Block Card
@@ -386,11 +387,11 @@ export default function FraudAlerts() {
                 <button
                   type="button"
                   disabled={isViewOnly}
-                  onClick={() => handleResolveAlert(alertItem.id)}
-                  className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => handleResolveAlert(alertItem)}
+                  className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold transition-colors disabled:opacity-50 cursor-pointer"
                   title="Mark Resolved"
                 >
-                  <CheckCircle2 className="w-4 h-4" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 </button>
               </div>
             </div>
@@ -400,23 +401,23 @@ export default function FraudAlerts() {
 
       {/* Alert Detail & KR&R Inspection Modal */}
       {selectedAlert && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-[#161A22] border border-[#222734] rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl p-6 space-y-5">
-            <div className="flex items-center justify-between border-b border-[#222734] pb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white border border-[#E5DCBE] rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl p-6 sm:p-8 space-y-5">
+            <div className="flex items-center justify-between border-b border-[#EAE2CE] pb-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400">
+                <div className="p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-600">
                   <ShieldAlert className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    Incident Dossier: <span className="font-mono text-rose-400">{selectedAlert.id}</span>
+                  <h3 className="text-lg font-extrabold text-[#1A1612] flex items-center gap-2">
+                    Incident Dossier: <span className="font-mono text-rose-700">{selectedAlert.id}</span>
                   </h3>
-                  <p className="text-xs text-gray-400">Linked to {selectedAlert.transactionId}</p>
+                  <p className="text-xs text-[#5C5648]">Linked to {selectedAlert.transactionId}</p>
                 </div>
               </div>
               <button
                 onClick={() => setSelectedAlert(null)}
-                className="p-1.5 rounded-lg hover:bg-[#222734] text-gray-400 hover:text-white"
+                className="p-1.5 rounded-lg hover:bg-amber-50 text-[#8C8270] hover:text-[#1A1612] cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -424,52 +425,52 @@ export default function FraudAlerts() {
 
             {/* Quick Details */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-3 rounded-xl bg-[#0B0E14] border border-[#222734]">
-                <div className="text-[11px] text-gray-400">Severity</div>
-                <div className="text-sm font-bold text-rose-400 mt-0.5">{selectedAlert.severity}</div>
+              <div className="p-3 rounded-2xl bg-[#FCFAF5] border border-[#EBE3D0]">
+                <div className="text-[11px] text-[#8C8270] font-bold uppercase">Severity</div>
+                <div className="text-sm font-extrabold text-rose-700 mt-0.5">{selectedAlert.severity}</div>
               </div>
-              <div className="p-3 rounded-xl bg-[#0B0E14] border border-[#222734]">
-                <div className="text-[11px] text-gray-400">Amount</div>
-                <div className="text-sm font-bold text-white mt-0.5">{selectedAlert.amount}</div>
+              <div className="p-3 rounded-2xl bg-[#FCFAF5] border border-[#EBE3D0]">
+                <div className="text-[11px] text-[#8C8270] font-bold uppercase">Amount</div>
+                <div className="text-sm font-extrabold text-[#1A1612] mt-0.5">{selectedAlert.amount}</div>
               </div>
-              <div className="p-3 rounded-xl bg-[#0B0E14] border border-[#222734]">
-                <div className="text-[11px] text-gray-400">Status</div>
-                <div className="text-xs font-mono font-semibold text-amber-400 mt-1">{selectedAlert.status}</div>
+              <div className="p-3 rounded-2xl bg-[#FCFAF5] border border-[#EBE3D0]">
+                <div className="text-[11px] text-[#8C8270] font-bold uppercase">Status</div>
+                <div className="text-xs font-mono font-bold text-amber-800 mt-1">{selectedAlert.status}</div>
               </div>
-              <div className="p-3 rounded-xl bg-[#0B0E14] border border-[#222734]">
-                <div className="text-[11px] text-gray-400">User / Account</div>
-                <div className="text-xs font-semibold text-gray-200 truncate mt-1">{selectedAlert.user}</div>
+              <div className="p-3 rounded-2xl bg-[#FCFAF5] border border-[#EBE3D0]">
+                <div className="text-[11px] text-[#8C8270] font-bold uppercase">User / Account</div>
+                <div className="text-xs font-bold text-[#1A1612] truncate mt-1">{selectedAlert.user}</div>
               </div>
             </div>
 
             {/* Incident Trigger Description */}
-            <div className="p-4 rounded-xl bg-[#0B0E14] border border-[#222734] space-y-2">
-              <div className="text-xs font-bold text-gray-300 uppercase tracking-wider">Detection Signature</div>
-              <p className="text-xs text-rose-300 leading-relaxed font-mono">
+            <div className="p-4 rounded-2xl bg-rose-50/50 border border-rose-200/80 space-y-1.5">
+              <div className="text-xs font-bold text-rose-900 uppercase tracking-wider">Detection Signature</div>
+              <p className="text-xs text-rose-800 leading-relaxed font-mono">
                 {selectedAlert.reason}
               </p>
             </div>
 
             {/* AI Reasoning / KR&R Breakdown */}
             {isLoadingReasoning ? (
-              <div className="py-6 flex flex-col items-center justify-center gap-2 text-gray-400">
-                <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
-                <span className="text-xs">Loading Bayesian and symbolic reasoning explanation...</span>
+              <div className="py-6 flex flex-col items-center justify-center gap-2 text-[#8C8270]">
+                <Loader2 className="w-5 h-5 animate-spin text-amber-600" />
+                <span className="text-xs font-bold">Loading Bayesian and symbolic reasoning explanation...</span>
               </div>
             ) : reasoningData ? (
               <div className="space-y-3">
-                <div className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Cpu className="w-3.5 h-3.5" />
+                <div className="text-xs font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Cpu className="w-3.5 h-3.5 text-amber-600" />
                   <span>Symbolic & Statistical AI Synthesis</span>
                 </div>
-                <div className="p-3 rounded-xl bg-[#0B0E14] border border-[#222734] text-xs text-gray-300 leading-relaxed">
+                <div className="p-4 rounded-2xl bg-[#FCFAF5] border border-[#EBE3D0] text-xs text-[#4A4438] leading-relaxed font-medium">
                   {reasoningData.explanation || 'Composite multi-paradigm audit confirms high anomaly threshold divergence.'}
                 </div>
               </div>
             ) : null}
 
             {/* Action Bar */}
-            <div className="flex items-center justify-between pt-3 border-t border-[#222734]">
+            <div className="flex items-center justify-between pt-3 border-t border-[#EAE2CE]">
               <button
                 type="button"
                 disabled={isViewOnly}
@@ -477,7 +478,7 @@ export default function FraudAlerts() {
                   handleBlockCard(selectedAlert);
                   setSelectedAlert(null);
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-rose-600/10 hover:bg-rose-600/20 border border-rose-600/30 text-rose-400 text-xs font-semibold transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-800 text-xs font-bold transition-colors disabled:opacity-50 cursor-pointer"
               >
                 <Ban className="w-3.5 h-3.5" />
                 Lock Account & Block
@@ -488,17 +489,17 @@ export default function FraudAlerts() {
                   type="button"
                   disabled={isViewOnly}
                   onClick={() => {
-                    handleResolveAlert(selectedAlert.id);
+                    handleResolveAlert(selectedAlert);
                     setSelectedAlert(null);
                   }}
-                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
                 >
                   Resolve Alert
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedAlert(null)}
-                  className="px-4 py-2 rounded-lg bg-[#222734] hover:bg-[#2c3242] text-xs font-semibold text-white transition-colors"
+                  className="px-4 py-2 rounded-xl bg-[#FAF8F4] hover:bg-amber-50 border border-[#E5DCBE] text-xs font-bold text-[#1A1612] transition-colors cursor-pointer"
                 >
                   Close
                 </button>

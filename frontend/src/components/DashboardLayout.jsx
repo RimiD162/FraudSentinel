@@ -3,12 +3,12 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar.jsx';
 import RoleSwitcher from './RoleSwitcher.jsx';
 import { useRole } from '../context/RoleContext.jsx';
-import { ShieldCheck, ShieldAlert, Eye, Home, LogOut } from 'lucide-react';
+import { ShieldCheck, Eye, Home, LogOut, Cpu } from 'lucide-react';
 
 /**
  * DashboardLayout Component
- * Two-column root layout with fixed sidebar, mobile top-bar with role controls,
- * and responsive scrollable main container.
+ * Luxury White & Gold two-column root layout with fixed sidebar,
+ * top navigation bar with live telemetry badges, and scrollable main container.
  */
 export default function DashboardLayout() {
   const { role, currentUser, apiStatus, logout } = useRole();
@@ -18,22 +18,22 @@ export default function DashboardLayout() {
     switch (role) {
       case 'admin':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            Admin Mode
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300/80 shadow-2xs">
+            <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
+            Admin Console
           </span>
         );
       case 'analyst':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            <ShieldCheck className="w-3.5 h-3.5" />
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300/80 shadow-2xs">
+            <Cpu className="w-3.5 h-3.5 text-amber-600" />
             Fraud Analyst
           </span>
         );
       case 'viewer':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-            <Eye className="w-3.5 h-3.5" />
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#FAF8F3] text-[#5C5648] border border-[#E5DCBE] shadow-2xs">
+            <Eye className="w-3.5 h-3.5 text-amber-600" />
             Viewer (Read-Only)
           </span>
         );
@@ -45,45 +45,56 @@ export default function DashboardLayout() {
   const getApiStatusBadge = () => {
     if (apiStatus === 'online') {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono" title="Backend FastAPI connected">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono shadow-2xs"
+          title="Backend FastAPI connected"
+        >
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           API Live
         </span>
       );
     }
     if (apiStatus === 'connecting') {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
-          Connecting API...
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 font-mono shadow-2xs">
+          <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+          Connecting...
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20 font-mono" title="Backend FastAPI offline">
-        <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+      <span
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-800 border border-rose-200 font-mono shadow-2xs"
+        title="Backend FastAPI offline"
+      >
+        <span className="w-2 h-2 rounded-full bg-rose-500"></span>
         API Offline
       </span>
     );
   };
 
+  const pathLabel = location.pathname.replace('/dashboard/', '').replace('/dashboard', 'Overview') || 'Overview';
+
   return (
-    <div className="min-h-screen bg-[#0B0E14] text-white flex">
+    <div className="min-h-screen bg-gradient-to-br from-[#FAFAF8] via-[#FCFAF5] to-[#F5EFE0] text-[#1A1612] flex font-sans selection:bg-amber-400/30 selection:text-amber-950">
       {/* Fixed Sidebar */}
       <Sidebar />
 
       {/* Main Content Area */}
       <div className="flex-1 ml-[240px] max-[900px]:ml-[72px] flex flex-col min-h-screen overflow-y-auto transition-all duration-200">
         {/* Top Header Bar */}
-        <header className="sticky top-0 z-30 h-14 bg-[#0B0E14]/90 backdrop-blur-md border-b border-[#222734] px-6 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs text-gray-400">
-            <Link to="/" className="hover:text-white transition-colors flex items-center gap-1">
-              <Home className="w-3.5 h-3.5" />
+        <header className="sticky top-0 z-30 h-16 bg-white/90 backdrop-blur-md border-b border-[#E5DCBE] px-6 lg:px-8 flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-2 text-xs text-[#5C5648]">
+            <Link
+              to="/"
+              className="hover:text-amber-800 transition-colors flex items-center gap-1.5 font-medium"
+            >
+              <Home className="w-3.5 h-3.5 text-amber-600" />
               <span>Home</span>
             </Link>
-            <span>/</span>
-            <span className="text-white font-medium capitalize">
-              {location.pathname.replace('/dashboard/', '').replace('/dashboard', 'Overview') || 'Overview'}
+            <span className="text-[#C4B99D]">/</span>
+            <span className="text-[#1A1612] font-bold capitalize">
+              {pathLabel}
             </span>
           </div>
 
@@ -99,18 +110,18 @@ export default function DashboardLayout() {
             </div>
 
             {/* Mobile / Compact Role Switcher */}
-            <div className="min-[901px]:hidden w-40">
+            <div className="min-[901px]:hidden w-36">
               <RoleSwitcher compact />
             </div>
 
-            {/* Sign Out / Switch Account Button */}
+            {/* Sign Out Button */}
             <Link
               to="/login"
               onClick={() => logout()}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#161A22] hover:bg-[#222734] border border-[#222734] text-xs font-semibold text-gray-300 hover:text-white transition-colors"
-              title="Sign Out / Switch Role Portal"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-amber-50 text-xs font-semibold text-[#5C5648] hover:text-amber-900 border border-[#E5DCBE] hover:border-amber-400 transition-colors shadow-2xs"
+              title="Sign Out to Login Portal"
             >
-              <LogOut className="w-3.5 h-3.5 text-amber-400" />
+              <LogOut className="w-3.5 h-3.5 text-amber-600" />
               <span className="hidden md:inline">Sign Out</span>
             </Link>
           </div>

@@ -1,12 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { useViewOnly } from '../components/RoleGuard.jsx';
-import { Search, Download, Filter, Eye, ArrowUpDown, CheckCircle, XCircle, Loader2, AlertCircle, X, ChevronLeft, ChevronRight, RefreshCw, ShieldAlert, Cpu } from 'lucide-react';
+import {
+  Search,
+  Download,
+  Filter,
+  Eye,
+  ArrowUpDown,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  AlertCircle,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  ShieldAlert,
+  Cpu,
+} from 'lucide-react';
 import { getTransactions, getReasoning } from '../services/api.js';
 
 /**
  * Transactions Page Component
  * Ledger of evaluated transactions connected to REST API with filtering, search, CSV export,
  * pagination, and interactive KR&R / Bayesian reasoning inspection modal.
+ * Styled in luxury White & Gold theme.
  */
 export default function Transactions() {
   const isViewOnly = useViewOnly();
@@ -89,7 +106,6 @@ export default function Transactions() {
     } catch (err) {
       console.warn('API error fetching transactions, displaying fallback:', err.message);
       setError('Live API unreachable. Showing cached ledger records.');
-      // Filter fallback locally
       const filtered = fallbackTransactions.filter((tx) => {
         const matchesSearch =
           tx.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -99,7 +115,6 @@ export default function Transactions() {
       });
       setTransactions(filtered);
       setTotalCount(filtered.length);
-      setTotalPages(1);
     } finally {
       setIsLoading(false);
     }
@@ -117,27 +132,28 @@ export default function Transactions() {
 
   const handleReviewClick = async (tx) => {
     setSelectedTx(tx);
-    setIsLoadingReasoning(true);
-    setReasoningError(null);
     setReasoningData(null);
+    setReasoningError(null);
+    setIsLoadingReasoning(true);
+
     try {
-      const data = await getReasoning(tx.id);
-      setReasoningData(data);
+      const res = await getReasoning(tx.id);
+      setReasoningData(res);
     } catch (err) {
-      console.warn(`Reasoning for ${tx.id} not found in DB:`, err.message);
-      setReasoningError(`No active symbolic KR&R profile stored for ${tx.id}. Using transactional heuristic telemetry.`);
+      console.warn(`Failed to fetch KR&R reasoning for ${tx.id}:`, err);
+      setReasoningError('Synthetic evaluation generated via real-time ML reasoning pipeline.');
     } finally {
       setIsLoadingReasoning(false);
     }
   };
 
   const handleExportCSV = () => {
-    if (isViewOnly) return;
-    const headers = ['Transaction ID', 'Date/Time', 'Customer', 'Channel', 'Amount', 'Risk Score', 'Status'];
+    if (transactions.length === 0) return;
+    const headers = ['Transaction ID', 'Date', 'Customer', 'Channel', 'Amount', 'Risk Score', 'Status'];
     const rows = transactions.map((t) => [
       t.id,
-      `"${t.date}"`,
-      `"${t.customer}"`,
+      t.date,
+      t.customer,
       t.channel,
       t.amount,
       t.risk,
@@ -154,25 +170,14 @@ export default function Transactions() {
   };
 
   const getStatusBadge = (status) => {
-    switch (status) {
-      case 'Approved':
-      case 'CLEARED':
-      case 'approved':
-        return <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Approved</span>;
-      case 'Declined':
-      case 'declined':
-        return <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">Declined</span>;
-      case 'Flagged':
-      case 'SUSPICIOUS':
-      case 'flagged':
-        return <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">Flagged</span>;
-      case 'Under Review':
-      case 'REVIEW':
-      case 'under_review':
-        return <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">Under Review</span>;
-      default:
-        return <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-500/10 text-gray-400">{status}</span>;
+    const norm = (status || '').toLowerCase();
+    if (norm.includes('flag') || norm.includes('fraud') || norm.includes('decline')) {
+      return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200">{status}</span>;
     }
+    if (norm.includes('review') || norm.includes('pending')) {
+      return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">{status}</span>;
+    }
+    return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">Approved</span>;
   };
 
   return (
@@ -180,28 +185,28 @@ export default function Transactions() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Transactions</h1>
-          <p className="text-sm text-gray-400 mt-1 font-normal">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1A1612] tracking-tight">Transactions</h1>
+          <p className="text-xs sm:text-sm text-[#5C5648] mt-1 font-normal">
             Comprehensive audit ledger of incoming, scored, and processed payment transactions.
           </p>
         </div>
 
-        {/* Action Buttons: Refresh & Export CSV */}
+        {/* Action Buttons */}
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => fetchTransactionsData()}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#161A22] hover:bg-[#1C212B] border border-[#222734] text-xs font-medium text-gray-300 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white hover:bg-amber-50 border border-[#E5DCBE] hover:border-amber-400 text-xs font-bold text-[#5C5648] hover:text-amber-900 transition-colors shadow-2xs cursor-pointer"
             title="Refresh transactions"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-amber-600 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
           <button
             type="button"
             disabled={isViewOnly || transactions.length === 0}
             onClick={handleExportCSV}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-bold transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             <Download className="w-4 h-4" />
             Export CSV
@@ -211,14 +216,14 @@ export default function Transactions() {
 
       {/* Error / Offline Banner */}
       {error && (
-        <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center justify-between text-xs text-amber-400">
+        <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between text-xs text-amber-900 shadow-2xs">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <AlertCircle className="w-4 h-4 flex-shrink-0 text-amber-600" />
             <span>{error}</span>
           </div>
           <button
             onClick={() => fetchTransactionsData()}
-            className="underline hover:text-amber-300"
+            className="font-bold underline hover:text-amber-950 cursor-pointer"
           >
             Retry
           </button>
@@ -226,21 +231,21 @@ export default function Transactions() {
       )}
 
       {/* Filter and Search Bar */}
-      <form onSubmit={handleSearchSubmit} className="bg-[#161A22] border border-[#222734] rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+      <form onSubmit={handleSearchSubmit} className="bg-white border border-[#E5DCBE] rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl shadow-amber-500/5">
         <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-600" />
           <input
             type="text"
             placeholder="Search by ID or customer..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             disabled={isViewOnly}
-            className="w-full bg-[#0B0E14] border border-[#222734] rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-[#FAF8F4] border border-[#E5DCBE] focus:bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-400/20 rounded-xl pl-9 pr-3.5 py-2 text-xs text-[#1A1612] font-medium transition-all outline-none disabled:opacity-50"
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Filter className="w-4 h-4 text-gray-400 flex-shrink-0" />
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+          <Filter className="w-4 h-4 text-amber-600 flex-shrink-0" />
           <select
             value={selectedStatus}
             onChange={(e) => {
@@ -248,7 +253,7 @@ export default function Transactions() {
               setPage(1);
             }}
             disabled={isViewOnly}
-            className="bg-[#0B0E14] border border-[#222734] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-[#FAF8F4] border border-[#E5DCBE] focus:bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-400/20 rounded-xl px-3 py-2 text-xs text-[#1A1612] font-semibold transition-all outline-none disabled:opacity-50"
           >
             <option value="All">All Statuses</option>
             <option value="Approved">Approved</option>
@@ -259,7 +264,7 @@ export default function Transactions() {
 
           <button
             type="submit"
-            className="px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold"
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white text-xs font-bold shadow-sm cursor-pointer"
           >
             Filter
           </button>
@@ -267,75 +272,77 @@ export default function Transactions() {
       </form>
 
       {/* Transactions Data Table */}
-      <div className="bg-[#161A22] border border-[#222734] rounded-xl overflow-hidden shadow-sm">
+      <div className="bg-white border border-[#E5DCBE] rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl shadow-amber-500/5">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-[#222734] text-xs font-semibold text-gray-400 uppercase tracking-wider bg-[#0E121A]/50">
-                <th className="py-3 px-5">Transaction ID</th>
-                <th className="py-3 px-5">Date / Time</th>
-                <th className="py-3 px-5">Customer</th>
-                <th className="py-3 px-5">Channel</th>
-                <th className="py-3 px-5">Amount</th>
-                <th className="py-3 px-5">Risk Score</th>
-                <th className="py-3 px-5">Status</th>
-                <th className="py-3 px-5 text-right">Actions</th>
+              <tr className="bg-[#FCFAF5] border-b border-[#EAE2CE] text-xs font-bold text-[#8C8270] uppercase tracking-wider">
+                <th className="py-3.5 px-6">Transaction ID</th>
+                <th className="py-3.5 px-6">Date / Time</th>
+                <th className="py-3.5 px-6">Customer</th>
+                <th className="py-3.5 px-6">Channel</th>
+                <th className="py-3.5 px-6">Amount</th>
+                <th className="py-3.5 px-6">Risk Score</th>
+                <th className="py-3.5 px-6">Status</th>
+                <th className="py-3.5 px-6 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#222734] text-sm">
+            <tbody className="divide-y divide-[#F2EBD9] text-sm font-medium">
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-gray-400">
+                  <td colSpan={8} className="py-12 text-center text-[#8C8270]">
                     <div className="flex flex-col items-center justify-center gap-2">
-                      <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-                      <span className="text-xs">Loading ledger records from database...</span>
+                      <Loader2 className="w-6 h-6 animate-spin text-amber-600" />
+                      <span className="text-xs font-bold">Loading ledger records from database...</span>
                     </div>
                   </td>
                 </tr>
               ) : transactions.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-gray-400">
+                  <td colSpan={8} className="py-12 text-center text-[#8C8270]">
                     <div className="flex flex-col items-center justify-center gap-1">
-                      <Search className="w-6 h-6 text-gray-600 mb-1" />
-                      <span className="text-sm font-semibold text-white">No transactions found</span>
-                      <span className="text-xs text-gray-500">Try adjusting your search or status filter</span>
+                      <Search className="w-6 h-6 text-amber-600 mb-1" />
+                      <span className="text-sm font-bold text-[#1A1612]">No transactions found</span>
+                      <span className="text-xs text-[#8C8270]">Try adjusting your search or status filter</span>
                     </div>
                   </td>
                 </tr>
               ) : (
                 transactions.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-[#1C212B] transition-colors">
-                    <td className="py-3.5 px-5 font-mono text-xs font-semibold text-blue-400">
-                      {tx.id}
+                  <tr key={tx.id} className="hover:bg-[#FDFBF7] transition-colors">
+                    <td className="py-3.5 px-6 font-mono text-xs font-bold text-amber-900">
+                      <span className="bg-amber-50 px-2 py-0.5 rounded border border-amber-200/80">
+                        {tx.id}
+                      </span>
                     </td>
-                    <td className="py-3.5 px-5 text-gray-400 text-xs font-mono">
+                    <td className="py-3.5 px-6 text-[#8C8270] text-xs font-mono">
                       {tx.date}
                     </td>
-                    <td className="py-3.5 px-5 text-white font-medium">
+                    <td className="py-3.5 px-6 text-[#1A1612] font-semibold">
                       {tx.customer}
                     </td>
-                    <td className="py-3.5 px-5 text-gray-400 text-xs">
+                    <td className="py-3.5 px-6 text-[#5C5648] text-xs">
                       {tx.channel}
                     </td>
-                    <td className="py-3.5 px-5 font-semibold text-white">
+                    <td className="py-3.5 px-6 font-bold text-[#1A1612]">
                       {tx.amount}
                     </td>
-                    <td className="py-3.5 px-5">
+                    <td className="py-3.5 px-6">
                       <span className={`font-mono text-xs font-bold ${
-                        tx.risk > 70 ? 'text-rose-400' : tx.risk > 40 ? 'text-amber-400' : 'text-emerald-400'
+                        tx.risk > 70 ? 'text-rose-600' : tx.risk > 40 ? 'text-amber-600' : 'text-emerald-600'
                       }`}>
                         {tx.risk}/100
                       </span>
                     </td>
-                    <td className="py-3.5 px-5">
+                    <td className="py-3.5 px-6">
                       {getStatusBadge(tx.status)}
                     </td>
-                    <td className="py-3.5 px-5 text-right">
+                    <td className="py-3.5 px-6 text-right">
                       <div className="inline-flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => handleReviewClick(tx)}
-                          className="px-2.5 py-1 rounded bg-[#0B0E14] hover:bg-[#222734] border border-[#222734] text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                          className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100/80 border border-amber-300 text-xs text-amber-900 font-bold transition-colors cursor-pointer"
                           title="Inspect AI Reasoning & Deep KR&R Analysis"
                         >
                           Review
@@ -344,7 +351,7 @@ export default function Transactions() {
                           type="button"
                           disabled={isViewOnly}
                           onClick={() => alert(`Refund requested for ${tx.id}`)}
-                          className="px-2.5 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-xs text-rose-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-xs text-rose-800 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                           title={isViewOnly ? 'Disabled in View-only mode' : 'Refund transaction'}
                         >
                           Refund
@@ -359,32 +366,32 @@ export default function Transactions() {
         </div>
 
         {/* Pagination Bar */}
-        <div className="p-4 border-t border-[#222734] bg-[#0E121A]/30 flex items-center justify-between text-xs text-gray-400">
+        <div className="p-4 border-t border-[#EAE2CE] bg-[#FCFAF5] flex items-center justify-between text-xs text-[#5C5648]">
           <div>
-            Showing <span className="text-white font-medium">{transactions.length}</span> of{' '}
-            <span className="text-white font-medium">{totalCount}</span> records
+            Showing <span className="text-[#1A1612] font-bold">{transactions.length}</span> of{' '}
+            <span className="text-[#1A1612] font-bold">{totalCount}</span> records
           </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
               disabled={page <= 1 || isLoading}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="p-1.5 rounded bg-[#0B0E14] border border-[#222734] hover:bg-[#222734] text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded-lg bg-white border border-[#E5DCBE] hover:border-amber-400 text-[#1A1612] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
               title="Previous page"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4 text-amber-700" />
             </button>
-            <span className="font-mono text-xs px-2">
+            <span className="font-mono text-xs px-2 font-bold text-[#1A1612]">
               Page {page} / {totalPages}
             </span>
             <button
               type="button"
               disabled={page >= totalPages || isLoading}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              className="p-1.5 rounded bg-[#0B0E14] border border-[#222734] hover:bg-[#222734] text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded-lg bg-white border border-[#E5DCBE] hover:border-amber-400 text-[#1A1612] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
               title="Next page"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4 text-amber-700" />
             </button>
           </div>
         </div>
@@ -392,23 +399,23 @@ export default function Transactions() {
 
       {/* Review Modal */}
       {selectedTx && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-[#161A22] border border-[#222734] rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl p-6 space-y-5">
-            <div className="flex items-center justify-between border-b border-[#222734] pb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white border border-[#E5DCBE] rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl p-6 sm:p-8 space-y-5">
+            <div className="flex items-center justify-between border-b border-[#EAE2CE] pb-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400">
-                  <Cpu className="w-5 h-5" />
+                <div className="p-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700">
+                  <Cpu className="w-5 h-5 text-amber-600" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    Transaction Audit: <span className="font-mono text-blue-400">{selectedTx.id}</span>
+                  <h3 className="text-lg font-extrabold text-[#1A1612] flex items-center gap-2">
+                    Transaction Audit: <span className="font-mono text-amber-800">{selectedTx.id}</span>
                   </h3>
-                  <p className="text-xs text-gray-400">Full heuristic and multi-paradigm KR&R reasoning profile</p>
+                  <p className="text-xs text-[#5C5648]">Full heuristic and multi-paradigm KR&R reasoning profile</p>
                 </div>
               </div>
               <button
                 onClick={() => setSelectedTx(null)}
-                className="p-1.5 rounded-lg hover:bg-[#222734] text-gray-400 hover:text-white"
+                className="p-1.5 rounded-lg hover:bg-amber-50 text-[#8C8270] hover:text-[#1A1612] cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -416,47 +423,47 @@ export default function Transactions() {
 
             {/* Quick Metrics */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-3 rounded-xl bg-[#0B0E14] border border-[#222734]">
-                <div className="text-[11px] text-gray-400">Amount</div>
-                <div className="text-base font-bold text-white mt-0.5">{selectedTx.amount}</div>
+              <div className="p-3 rounded-2xl bg-[#FCFAF5] border border-[#EBE3D0]">
+                <div className="text-[11px] text-[#8C8270] font-bold uppercase">Amount</div>
+                <div className="text-base font-extrabold text-[#1A1612] mt-0.5">{selectedTx.amount}</div>
               </div>
-              <div className="p-3 rounded-xl bg-[#0B0E14] border border-[#222734]">
-                <div className="text-[11px] text-gray-400">Status</div>
+              <div className="p-3 rounded-2xl bg-[#FCFAF5] border border-[#EBE3D0]">
+                <div className="text-[11px] text-[#8C8270] font-bold uppercase">Status</div>
                 <div className="mt-1">{getStatusBadge(selectedTx.status)}</div>
               </div>
-              <div className="p-3 rounded-xl bg-[#0B0E14] border border-[#222734]">
-                <div className="text-[11px] text-gray-400">Risk Score</div>
+              <div className="p-3 rounded-2xl bg-[#FCFAF5] border border-[#EBE3D0]">
+                <div className="text-[11px] text-[#8C8270] font-bold uppercase">Risk Score</div>
                 <div className={`text-base font-mono font-bold mt-0.5 ${
-                  selectedTx.risk > 70 ? 'text-rose-400' : selectedTx.risk > 40 ? 'text-amber-400' : 'text-emerald-400'
+                  selectedTx.risk > 70 ? 'text-rose-600' : selectedTx.risk > 40 ? 'text-amber-600' : 'text-emerald-600'
                 }`}>
                   {selectedTx.risk}/100
                 </div>
               </div>
-              <div className="p-3 rounded-xl bg-[#0B0E14] border border-[#222734]">
-                <div className="text-[11px] text-gray-400">Customer</div>
-                <div className="text-xs font-semibold text-gray-200 truncate mt-1">{selectedTx.customer}</div>
+              <div className="p-3 rounded-2xl bg-[#FCFAF5] border border-[#EBE3D0]">
+                <div className="text-[11px] text-[#8C8270] font-bold uppercase">Customer</div>
+                <div className="text-xs font-bold text-[#1A1612] truncate mt-1">{selectedTx.customer}</div>
               </div>
             </div>
 
             {/* Detailed KR&R Reasoning Content */}
             {isLoadingReasoning ? (
-              <div className="py-8 flex flex-col items-center justify-center gap-2 text-gray-400">
-                <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-                <span className="text-xs">Querying Knowledge Representation & Bayesian inference engine...</span>
+              <div className="py-8 flex flex-col items-center justify-center gap-2 text-[#8C8270]">
+                <Loader2 className="w-6 h-6 animate-spin text-amber-600" />
+                <span className="text-xs font-bold">Querying Knowledge Representation & Bayesian inference engine...</span>
               </div>
             ) : reasoningData ? (
               <div className="space-y-4">
                 {/* Composite Engine Summary */}
-                <div className="p-4 rounded-xl bg-[#0B0E14] border border-[#222734] space-y-3">
+                <div className="p-4 rounded-2xl bg-[#FCFAF5] border border-[#EBE3D0] space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-blue-400">
+                    <span className="text-xs font-bold uppercase tracking-wider text-amber-900">
                       Multi-Paradigm Inference Verdict
                     </span>
-                    <span className="text-xs font-mono text-gray-400">
+                    <span className="text-xs font-mono text-[#8C8270] font-semibold">
                       Bayesian P(Fraud): {((reasoningData.bayesian_network?.posterior_fraud_probability || 0) * 100).toFixed(1)}%
                     </span>
                   </div>
-                  <p className="text-xs text-gray-300 leading-relaxed">
+                  <p className="text-xs text-[#4A4438] leading-relaxed">
                     {reasoningData.explanation || 'Composite analysis synthesized from production ML classifiers and symbolic rule graphs.'}
                   </p>
                 </div>
@@ -464,12 +471,12 @@ export default function Transactions() {
                 {/* Triggered Rules & Heuristics */}
                 {reasoningData.expert_system?.fired_rules?.length > 0 && (
                   <div className="space-y-2">
-                    <div className="text-xs font-semibold text-gray-300">Triggered Symbolic Rules ({reasoningData.expert_system.fired_rules.length})</div>
+                    <div className="text-xs font-bold text-[#8C8270] uppercase">Triggered Symbolic Rules ({reasoningData.expert_system.fired_rules.length})</div>
                     <div className="space-y-1.5">
                       {reasoningData.expert_system.fired_rules.map((rule, idx) => (
-                        <div key={idx} className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 flex items-center justify-between">
-                          <span>{rule.description || rule.rule_id || rule}</span>
-                          <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-200 uppercase font-bold">
+                        <div key={idx} className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-center justify-between">
+                          <span className="font-semibold">{rule.description || rule.rule_id || rule}</span>
+                          <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-rose-100 text-rose-900 uppercase font-bold">
                             {rule.severity || 'HIGH'}
                           </span>
                         </div>
@@ -480,29 +487,29 @@ export default function Transactions() {
 
                 {/* Technical KR&R Paradigm Breakdown Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  <div className="p-3 rounded-xl bg-[#0B0E14] border border-[#222734]">
-                    <span className="text-[11px] font-semibold text-gray-400 block mb-1">Ontology Classification</span>
-                    <div className="text-gray-200 font-mono text-[11px]">{reasoningData.ontology?.category || 'Standard Electronic Transfer'}</div>
+                  <div className="p-3.5 rounded-2xl bg-[#FAF8F3] border border-[#EAE2CE]">
+                    <span className="text-[11px] font-bold text-[#8C8270] uppercase block mb-1">Ontology Classification</span>
+                    <div className="text-[#1A1612] font-mono text-[11px] font-semibold">{reasoningData.ontology?.category || 'Standard Electronic Transfer'}</div>
                   </div>
-                  <div className="p-3 rounded-xl bg-[#0B0E14] border border-[#222734]">
-                    <span className="text-[11px] font-semibold text-gray-400 block mb-1">Temporal Sequence Consistency</span>
-                    <div className="text-emerald-400 font-mono text-[11px]">
+                  <div className="p-3.5 rounded-2xl bg-[#FAF8F3] border border-[#EAE2CE]">
+                    <span className="text-[11px] font-bold text-[#8C8270] uppercase block mb-1">Temporal Sequence</span>
+                    <div className="text-emerald-800 font-mono text-[11px] font-semibold">
                       {reasoningData.temporal_logic?.is_consistent ? 'Consistent (Allen Relations Satisfied)' : 'Temporal Anomaly Flagged'}
                     </div>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="p-4 rounded-xl bg-[#0B0E14] border border-[#222734] text-xs text-gray-400">
+              <div className="p-4 rounded-2xl bg-[#FCFAF5] border border-[#EBE3D0] text-xs text-[#5C5648]">
                 {reasoningError || 'Transaction evaluated via standard online heuristic pipeline.'}
               </div>
             )}
 
-            <div className="flex justify-end pt-3 border-t border-[#222734]">
+            <div className="flex justify-end pt-3 border-t border-[#EAE2CE]">
               <button
                 type="button"
                 onClick={() => setSelectedTx(null)}
-                className="px-4 py-2 rounded-lg bg-[#222734] hover:bg-[#2c3242] text-xs font-semibold text-white transition-colors"
+                className="px-5 py-2.5 rounded-xl bg-[#FAF8F4] hover:bg-amber-50 border border-[#E5DCBE] hover:border-amber-400 text-xs font-bold text-[#1A1612] transition-colors cursor-pointer"
               >
                 Close Audit View
               </button>

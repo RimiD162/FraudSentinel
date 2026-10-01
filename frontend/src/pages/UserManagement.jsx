@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useViewOnly } from '../components/RoleGuard.jsx';
-import { Users, UserPlus, Shield, MoreVertical, CheckCircle2, Mail, Edit3, Trash2, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
+import { Users, UserPlus, Shield, CheckCircle2, Mail, Trash2, Loader2, RefreshCw, AlertCircle, ShieldCheck, Eye, KeyRound } from 'lucide-react';
 import { getUsers, createUser, deleteUser } from '../services/api.js';
 
 /**
  * UserManagement Page Component
  * Organizational access management, team member assignments, and role delegation.
- * Fully connected to the backend RBAC user management endpoints.
+ * Luxury White & Gold theme matching the Landing and Auth design system.
  */
 export default function UserManagement() {
   const isViewOnly = useViewOnly();
@@ -34,7 +34,7 @@ export default function UserManagement() {
       role: 'Admin',
       status: 'Active',
       lastActive: 'Just now',
-      avatarColor: 'bg-blue-600',
+      avatarColor: 'from-amber-500 to-yellow-600',
     },
     {
       id: 'usr_2',
@@ -43,7 +43,7 @@ export default function UserManagement() {
       role: 'Fraud Analyst',
       status: 'Active',
       lastActive: '10 mins ago',
-      avatarColor: 'bg-emerald-600',
+      avatarColor: 'from-blue-500 to-indigo-600',
     },
     {
       id: 'usr_3',
@@ -52,7 +52,7 @@ export default function UserManagement() {
       role: 'Viewer',
       status: 'Active',
       lastActive: '1 hour ago',
-      avatarColor: 'bg-amber-600',
+      avatarColor: 'from-emerald-500 to-teal-600',
     },
   ];
 
@@ -65,6 +65,14 @@ export default function UserManagement() {
       const res = await getUsers();
       const rawList = res?.items || (Array.isArray(res) ? res : []);
       if (rawList.length > 0) {
+        const colors = [
+          'from-amber-500 to-yellow-600',
+          'from-blue-500 to-indigo-600',
+          'from-emerald-500 to-teal-600',
+          'from-purple-500 to-pink-600',
+          'from-rose-500 to-orange-600',
+        ];
+
         const mapped = rawList.map((u, idx) => {
           const roleNormalized = (u.role || u.role_name || 'analyst').toLowerCase();
           const roleDisplay =
@@ -74,9 +82,6 @@ export default function UserManagement() {
               ? 'Fraud Analyst'
               : 'Viewer';
 
-          const colors = ['bg-blue-600', 'bg-emerald-600', 'bg-indigo-600', 'bg-purple-600', 'bg-amber-600'];
-          const avatarColor = colors[idx % colors.length];
-
           return {
             id: u.id,
             name: u.full_name || u.email.split('@')[0],
@@ -85,7 +90,7 @@ export default function UserManagement() {
             roleRaw: roleNormalized,
             status: u.is_active !== false ? 'Active' : 'Suspended',
             lastActive: u.created_at ? new Date(u.created_at).toLocaleDateString() : 'Active',
-            avatarColor,
+            avatarColor: colors[idx % colors.length],
           };
         });
         setUsers(mapped);
@@ -94,7 +99,7 @@ export default function UserManagement() {
       }
     } catch (err) {
       console.warn('API error fetching users, using local list:', err);
-      setError('Live user registry sync notice: operating with authenticated fallback accounts.');
+      setError('Live user registry notice: operating with fallback verified accounts.');
       setUsers(fallbackUsers);
     } finally {
       setIsLoading(false);
@@ -124,7 +129,7 @@ export default function UserManagement() {
       setShowAddModal(false);
       setNewUserData({ email: '', password: '', full_name: '', role_name: 'analyst' });
       await fetchUsersList(true);
-      setTimeout(() => setNotification(null), 4000);
+      setTimeout(() => setNotification(null), 4500);
     } catch (err) {
       console.error('Failed to create user:', err);
       alert(`Error creating user: ${err.message}`);
@@ -145,24 +150,27 @@ export default function UserManagement() {
         setUsers(users.filter((u) => u.id !== id));
         setTimeout(() => setNotification(null), 4000);
       } catch (err) {
-        // Fallback local remove
         setUsers(users.filter((u) => u.id !== id));
       }
     }
   };
 
+  const adminCount = users.filter((u) => u.role === 'Admin').length;
+  const analystCount = users.filter((u) => u.role === 'Fraud Analyst').length;
+  const viewerCount = users.filter((u) => u.role === 'Viewer').length;
+
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Notification Toast */}
       {notification && (
-        <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-sm flex items-center justify-between animate-fadeIn">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span>{notification.message}</span>
+        <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 text-sm flex items-center justify-between shadow-sm animate-fadeIn">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+            <span className="font-medium">{notification.message}</span>
           </div>
           <button
             onClick={() => setNotification(null)}
-            className="text-xs text-emerald-400 hover:underline"
+            className="text-xs font-semibold text-emerald-700 hover:text-emerald-900 underline"
           >
             Dismiss
           </button>
@@ -172,14 +180,14 @@ export default function UserManagement() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-            <span>User Management</span>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-              Admin Only
+          <h1 className="text-2xl font-bold text-[#1A1612] tracking-tight flex items-center gap-2.5">
+            <span>User & Access Management</span>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r from-amber-50 to-amber-100 text-amber-800 border border-amber-300">
+              Admin Exclusive
             </span>
           </h1>
-          <p className="text-sm text-gray-400 mt-1 font-normal">
-            Manage organization team members, assign access control roles, and review session activity.
+          <p className="text-sm text-[#5C5648] mt-1 font-normal">
+            Manage organization team members, assign access control roles, and audit security credentials.
           </p>
         </div>
 
@@ -189,109 +197,146 @@ export default function UserManagement() {
             type="button"
             onClick={() => fetchUsersList(true)}
             disabled={isLoading || isRefreshing}
-            className="p-2.5 rounded-lg border border-[#222734] bg-[#161A22] text-gray-300 hover:text-white hover:border-gray-600 transition-colors"
+            className="p-2.5 rounded-xl border border-[#E5DCBE] bg-white text-[#5C5648] hover:text-[#1A1612] hover:border-amber-400 shadow-sm transition-all active:scale-95"
             title="Refresh Users"
           >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-blue-400' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-amber-600' : ''}`} />
           </button>
           <button
             type="button"
             disabled={isViewOnly}
             onClick={() => setShowAddModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 active:scale-95 text-white text-sm font-semibold transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <UserPlus className="w-4 h-4" />
-            Add Member
+            Add Team Member
           </button>
         </div>
       </div>
 
+      {/* Metric Highlights */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white border border-[#E5DCBE] rounded-2xl p-5 shadow-xl shadow-amber-500/5 flex items-center justify-between">
+          <div>
+            <div className="text-xs font-semibold text-[#8C8270] uppercase tracking-wider">Total Seats</div>
+            <div className="text-2xl font-bold text-[#1A1612] mt-1">{users.length}</div>
+            <div className="text-[11px] text-[#5C5648] mt-0.5">Active enterprise licenses</div>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600">
+            <Users className="w-6 h-6" />
+          </div>
+        </div>
+
+        <div className="bg-white border border-[#E5DCBE] rounded-2xl p-5 shadow-xl shadow-amber-500/5 flex items-center justify-between">
+          <div>
+            <div className="text-xs font-semibold text-[#8C8270] uppercase tracking-wider">Fraud Analysts</div>
+            <div className="text-2xl font-bold text-[#1A1612] mt-1">{analystCount}</div>
+            <div className="text-[11px] text-blue-600 mt-0.5">Triage & KR&R Symbolic Engine</div>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200/60 flex items-center justify-center text-blue-600">
+            <ShieldCheck className="w-6 h-6" />
+          </div>
+        </div>
+
+        <div className="bg-white border border-[#E5DCBE] rounded-2xl p-5 shadow-xl shadow-amber-500/5 flex items-center justify-between">
+          <div>
+            <div className="text-xs font-semibold text-[#8C8270] uppercase tracking-wider">Admins & Auditors</div>
+            <div className="text-2xl font-bold text-[#1A1612] mt-1">{adminCount + viewerCount}</div>
+            <div className="text-[11px] text-emerald-600 mt-0.5">{adminCount} Admins &bull; {viewerCount} Viewers</div>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200/60 flex items-center justify-center text-emerald-600">
+            <KeyRound className="w-6 h-6" />
+          </div>
+        </div>
+      </div>
+
       {/* Users Table */}
-      <div className="bg-[#161A22] border border-[#222734] rounded-xl overflow-hidden shadow-sm">
+      <div className="bg-white border border-[#E5DCBE] rounded-2xl overflow-hidden shadow-xl shadow-amber-500/5">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-[#222734] text-xs font-semibold text-gray-400 uppercase tracking-wider bg-[#0E121A]/50">
-                <th className="py-3 px-5">Team Member</th>
-                <th className="py-3 px-5">System Role</th>
-                <th className="py-3 px-5">Account Status</th>
-                <th className="py-3 px-5">Registered</th>
-                <th className="py-3 px-5 text-right">Actions</th>
+              <tr className="border-b border-[#EBE3D0] text-xs font-semibold text-[#8C8270] uppercase tracking-wider bg-[#FCFAF5]">
+                <th className="py-3.5 px-6">Team Member</th>
+                <th className="py-3.5 px-6">System Role</th>
+                <th className="py-3.5 px-6">Account Status</th>
+                <th className="py-3.5 px-6">Enrolled Date</th>
+                <th className="py-3.5 px-6 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#222734] text-sm">
+            <tbody className="divide-y divide-[#EBE3D0] text-sm">
               {isLoading ? (
                 <tr>
-                  <td colSpan="5" className="py-12 text-center text-gray-400">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-400 mb-2" />
-                    <span>Loading registered users...</span>
+                  <td colSpan="5" className="py-16 text-center text-[#5C5648]">
+                    <Loader2 className="w-7 h-7 animate-spin mx-auto text-amber-600 mb-2.5" />
+                    <span className="font-medium text-sm">Loading security registry...</span>
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="py-8 text-center text-gray-400">
-                    No users found.
+                  <td colSpan="5" className="py-12 text-center text-[#8C8270]">
+                    No users found in organization.
                   </td>
                 </tr>
               ) : (
                 users.map((user) => (
-                  <tr key={user.id} className="hover:bg-[#1C212B] transition-colors">
-                    <td className="py-3.5 px-5">
-                      <div className="flex items-center gap-3">
+                  <tr key={user.id} className="hover:bg-[#FAF8F4] transition-colors">
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-3.5">
                         <div
-                          className={`w-9 h-9 rounded-full ${user.avatarColor} text-white font-bold text-xs flex items-center justify-center flex-shrink-0`}
+                          className={`w-10 h-10 rounded-full bg-gradient-to-br ${user.avatarColor} text-white font-bold text-sm flex items-center justify-center flex-shrink-0 shadow-sm`}
                         >
                           {user.name.charAt(0)}
                         </div>
                         <div>
-                          <div className="font-semibold text-white text-sm">
+                          <div className="font-semibold text-[#1A1612] text-sm">
                             {user.name}
                           </div>
-                          <div className="text-xs text-gray-400 flex items-center gap-1 font-normal">
-                            <Mail className="w-3 h-3 text-gray-500" />
+                          <div className="text-xs text-[#8C8270] flex items-center gap-1.5 font-normal mt-0.5">
+                            <Mail className="w-3.5 h-3.5 text-[#8C8270]" />
                             {user.email}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td className="py-3.5 px-5">
+                    <td className="py-4 px-6">
                       <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
                           user.role === 'Admin'
-                            ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                            ? 'bg-amber-100 text-amber-900 border border-amber-300'
                             : user.role === 'Fraud Analyst'
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                            : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                            ? 'bg-blue-50 text-blue-800 border border-blue-200'
+                            : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                         }`}
                       >
-                        <Shield className="w-3 h-3" />
+                        <Shield className="w-3.5 h-3.5" />
                         {user.role}
                       </span>
                     </td>
-                    <td className="py-3.5 px-5 text-xs">
+                    <td className="py-4 px-6 text-xs">
                       <span
-                        className={`px-2 py-0.5 rounded text-[11px] font-medium ${
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
                           user.status === 'Active'
-                            ? 'bg-emerald-500/10 text-emerald-400'
-                            : 'bg-gray-500/10 text-gray-400'
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                            : 'bg-stone-100 text-stone-700 border border-stone-300'
                         }`}
                       >
+                        <span className={`w-1.5 h-1.5 rounded-full ${user.status === 'Active' ? 'bg-emerald-500' : 'bg-stone-400'}`} />
                         {user.status}
                       </span>
                     </td>
-                    <td className="py-3.5 px-5 text-xs text-gray-400 font-mono">
+                    <td className="py-4 px-6 text-xs text-[#5C5648] font-mono">
                       {user.lastActive}
                     </td>
-                    <td className="py-3.5 px-5 text-right">
+                    <td className="py-4 px-6 text-right">
                       <div className="inline-flex items-center gap-1.5">
                         <button
                           type="button"
                           disabled={isViewOnly}
                           onClick={() => handleRemove(user.id, user.name)}
-                          className="p-1.5 rounded hover:bg-rose-500/10 text-gray-400 hover:text-rose-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-2 rounded-lg hover:bg-rose-50 text-[#8C8270] hover:text-rose-600 border border-transparent hover:border-rose-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Revoke Access"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
@@ -305,16 +350,18 @@ export default function UserManagement() {
 
       {/* Add Member Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-[#161A22] border border-[#222734] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-5">
-            <div className="flex items-center justify-between pb-3 border-b border-[#222734]">
-              <div className="flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-blue-400" />
-                <h3 className="text-base font-bold text-white">Add Team Member</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white border border-[#E5DCBE] rounded-2xl w-full max-w-md p-6 shadow-2xl shadow-amber-900/15 space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-[#EBE3D0]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+                  <UserPlus className="w-4 h-4" />
+                </div>
+                <h3 className="text-base font-bold text-[#1A1612]">Add Team Member</h3>
               </div>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="text-gray-400 hover:text-white text-sm p-1"
+                className="text-[#8C8270] hover:text-[#1A1612] text-sm p-1 rounded-lg hover:bg-[#FAF8F4] transition-colors"
               >
                 ✕
               </button>
@@ -322,7 +369,7 @@ export default function UserManagement() {
 
             <form onSubmit={handleCreateUserSubmit} className="space-y-4 text-sm">
               <div>
-                <label className="block text-xs font-semibold text-gray-300 mb-1">
+                <label className="block text-xs font-semibold text-[#5C5648] mb-1.5">
                   Full Name
                 </label>
                 <input
@@ -331,12 +378,12 @@ export default function UserManagement() {
                   value={newUserData.full_name}
                   onChange={(e) => setNewUserData({ ...newUserData, full_name: e.target.value })}
                   placeholder="e.g. Jordan Smith"
-                  className="w-full bg-[#0E121A] border border-[#222734] rounded-lg px-3.5 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                  className="w-full bg-[#FAF8F4] border border-[#E5DCBE] rounded-xl px-3.5 py-2.5 text-[#1A1612] placeholder-[#8C8270]/60 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 shadow-sm"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-300 mb-1">
+                <label className="block text-xs font-semibold text-[#5C5648] mb-1.5">
                   Email Address
                 </label>
                 <input
@@ -345,13 +392,13 @@ export default function UserManagement() {
                   value={newUserData.email}
                   onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
                   placeholder="user@fraudsentinel.com"
-                  className="w-full bg-[#0E121A] border border-[#222734] rounded-lg px-3.5 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                  className="w-full bg-[#FAF8F4] border border-[#E5DCBE] rounded-xl px-3.5 py-2.5 text-[#1A1612] placeholder-[#8C8270]/60 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 shadow-sm"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-300 mb-1">
-                  Password
+                <label className="block text-xs font-semibold text-[#5C5648] mb-1.5">
+                  Initial Password
                 </label>
                 <input
                   type="password"
@@ -359,37 +406,37 @@ export default function UserManagement() {
                   value={newUserData.password}
                   onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
                   placeholder="••••••••"
-                  className="w-full bg-[#0E121A] border border-[#222734] rounded-lg px-3.5 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                  className="w-full bg-[#FAF8F4] border border-[#E5DCBE] rounded-xl px-3.5 py-2.5 text-[#1A1612] placeholder-[#8C8270]/60 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 shadow-sm"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-300 mb-1">
+                <label className="block text-xs font-semibold text-[#5C5648] mb-1.5">
                   System Role
                 </label>
                 <select
                   value={newUserData.role_name}
                   onChange={(e) => setNewUserData({ ...newUserData, role_name: e.target.value })}
-                  className="w-full bg-[#0E121A] border border-[#222734] rounded-lg px-3.5 py-2 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-[#FAF8F4] border border-[#E5DCBE] rounded-xl px-3.5 py-2.5 text-[#1A1612] focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 shadow-sm font-medium"
                 >
-                  <option value="analyst">Fraud Analyst (Alerts, ML, Analytics)</option>
+                  <option value="analyst">Fraud Analyst (Alerts, ML Inspection & Analytics)</option>
                   <option value="admin">Administrator (Full Access & User Management)</option>
                   <option value="viewer">Auditor / Viewer (Read-only)</option>
                 </select>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#222734]">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#EBE3D0]">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 rounded-lg border border-[#222734] text-gray-300 hover:text-white transition-colors"
+                  className="px-4 py-2.5 rounded-xl border border-[#E5DCBE] text-[#5C5648] hover:text-[#1A1612] hover:bg-[#FAF8F4] font-semibold transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-colors flex items-center gap-2"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-semibold transition-all flex items-center gap-2 shadow-md shadow-amber-500/20"
                 >
                   {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
                   Register Member
@@ -402,3 +449,4 @@ export default function UserManagement() {
     </div>
   );
 }
+

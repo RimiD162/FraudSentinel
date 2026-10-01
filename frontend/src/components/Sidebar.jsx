@@ -9,9 +9,8 @@ import {
   BarChart3,
   Users,
   Settings,
-  HelpCircle,
+  Shield,
   ArrowLeft,
-  Eye,
 } from 'lucide-react';
 import { useRole } from '../context/RoleContext.jsx';
 import RoleSwitcher from './RoleSwitcher.jsx';
@@ -81,39 +80,43 @@ const NAV_ITEMS = [
 
 /**
  * Sidebar Component
- * Fixed dark navigation sidebar (~240px wide) collapsing to an icon rail below ~900px.
+ * Luxury White & Gold fixed navigation sidebar (~240px wide) collapsing to an icon rail below ~900px.
  * Reads permission matrix to dynamically filter navigation items based on current role.
  */
 export default function Sidebar() {
   const { getPermission, role } = useRole();
 
-  // Filter items dynamically using centralized permission table — no hardcoded scattered checks
+  // Filter items dynamically using centralized permission table
   const visibleNavItems = NAV_ITEMS.filter(
     (item) => getPermission(item.permissionKey) !== 'hidden'
   );
 
   return (
     <aside
-      className="fixed top-0 left-0 h-screen w-[240px] max-[900px]:w-[72px] bg-[#0B0E14] border-r border-[#222734] flex flex-col justify-between p-4 z-40 transition-all duration-200 select-none"
+      className="fixed top-0 left-0 h-screen w-[240px] max-[900px]:w-[72px] bg-white/95 backdrop-blur-md border-r border-[#E5DCBE] flex flex-col justify-between p-4 z-40 transition-all duration-200 select-none shadow-xs"
       aria-label="Sidebar Navigation"
     >
       {/* Top Brand & Navigation */}
       <div className="flex flex-col overflow-y-auto">
         {/* Brand Header */}
-        <div className="flex items-center gap-2 h-10 px-2 mb-5 max-[900px]:justify-center">
+        <div className="flex items-center gap-2.5 h-12 px-2 mb-5 max-[900px]:justify-center">
           <Link
             to="/"
-            className="text-lg font-bold text-white tracking-tight flex items-center gap-2 hover:opacity-90 transition-opacity"
+            className="flex items-center gap-2.5 text-base font-bold text-[#1A1612] tracking-tight hover:opacity-90 transition-opacity"
             title="Return to Landing Page"
           >
-            <span className="max-[900px]:hidden">FraudSentinel</span>
-            <span className="text-xl" role="img" aria-label="Shield">🛡️</span>
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 flex items-center justify-center text-white shadow-md shadow-amber-500/20 shrink-0">
+              <Shield className="w-4.5 h-4.5 fill-white/20 text-white" />
+            </div>
+            <span className="max-[900px]:hidden font-extrabold tracking-tight text-[#1A1612]">
+              Fraud<span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-700">Sentinel</span>
+            </span>
           </Link>
         </div>
 
         {/* Nav List */}
         <nav aria-label="Main Navigation">
-          <ul className="space-y-1 list-none p-0 m-0">
+          <ul className="space-y-1.5 list-none p-0 m-0">
             {visibleNavItems.map((item) => {
               const Icon = item.icon;
               const isViewOnlySection = getPermission(item.permissionKey) === 'view';
@@ -124,10 +127,10 @@ export default function Sidebar() {
                     to={item.path}
                     end={item.path === '/dashboard'}
                     className={({ isActive }) =>
-                      `w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none max-[900px]:justify-center max-[900px]:px-0 ${
+                      `w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none max-[900px]:justify-center max-[900px]:px-0 ${
                         isActive
-                          ? 'bg-white text-gray-950 font-semibold shadow-sm'
-                          : 'text-gray-400 hover:text-gray-100 hover:bg-[#161A22]'
+                          ? 'bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-md shadow-amber-500/25'
+                          : 'text-[#5C5648] hover:text-[#1A1612] hover:bg-amber-50/70 border border-transparent hover:border-amber-200/50'
                       }`
                     }
                     title={
@@ -139,8 +142,8 @@ export default function Sidebar() {
                     {({ isActive }) => (
                       <>
                         <Icon
-                          className={`w-4 h-4 flex-shrink-0 ${
-                            isActive ? 'text-gray-950' : 'text-gray-400'
+                          className={`w-4 h-4 flex-shrink-0 transition-colors ${
+                            isActive ? 'text-white' : 'text-amber-600'
                           }`}
                         />
                         <span className="max-[900px]:hidden truncate flex-1 text-left">
@@ -148,10 +151,10 @@ export default function Sidebar() {
                         </span>
                         {isViewOnlySection && (
                           <span
-                            className={`max-[900px]:hidden text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                            className={`max-[900px]:hidden text-[10px] px-1.5 py-0.5 rounded font-mono font-bold ${
                               isActive
-                                ? 'bg-gray-200 text-gray-700'
-                                : 'bg-[#222734] text-amber-400'
+                                ? 'bg-white/20 text-white'
+                                : 'bg-amber-50 text-amber-800 border border-amber-200'
                             }`}
                             title="View-only access for current role"
                           >
@@ -169,7 +172,7 @@ export default function Sidebar() {
       </div>
 
       {/* Bottom Pinned Area */}
-      <div className="pt-3 border-t border-[#222734]/80 flex flex-col gap-3">
+      <div className="pt-3 border-t border-[#EAE2CE] flex flex-col gap-3">
         {/* Role Switcher Demo Control */}
         <div className="max-[900px]:hidden">
           <RoleSwitcher />
@@ -178,8 +181,8 @@ export default function Sidebar() {
         {/* Compact Role Switcher Indicator for collapsed screen (<900px) */}
         <div className="hidden max-[900px]:flex justify-center">
           <div
-            className="w-8 h-8 rounded-full bg-[#161A22] border border-[#222734] flex items-center justify-center text-xs font-bold text-blue-400"
-            title={`Active Demo Role: ${role}`}
+            className="w-8 h-8 rounded-full bg-amber-50 border border-amber-300 flex items-center justify-center text-xs font-bold text-amber-800 shadow-2xs"
+            title={`Active Role: ${role}`}
           >
             {role.charAt(0).toUpperCase()}
           </div>
@@ -188,10 +191,10 @@ export default function Sidebar() {
         {/* Back to Landing Page Link */}
         <Link
           to="/"
-          className="text-xs text-gray-400 hover:text-gray-200 flex items-center justify-center gap-1.5 py-1.5 rounded bg-[#161A22]/50 hover:bg-[#161A22] border border-[#222734] transition-colors focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="text-xs font-semibold text-[#5C5648] hover:text-amber-900 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-white hover:bg-amber-50 border border-[#E5DCBE] hover:border-amber-400 transition-colors shadow-2xs"
           title="Back to Landing Page"
         >
-          <ArrowLeft className="w-3.5 h-3.5 flex-shrink-0 text-gray-400" />
+          <ArrowLeft className="w-3.5 h-3.5 flex-shrink-0 text-amber-600" />
           <span className="max-[900px]:hidden">Exit to Landing</span>
         </Link>
       </div>

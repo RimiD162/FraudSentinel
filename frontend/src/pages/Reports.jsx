@@ -6,9 +6,10 @@ import { getForecasts, getForecastByHorizon, searchInvestigation } from '../serv
 /**
  * Reports & Intelligence Page Component
  * Multi-tab control center combining:
- * 1. Official Compliance & SAR Dossiers
- * 2. Time-Series Predictive Forecasting (7d, 14d, 30d Horizons)
- * 3. AI Graph Search & Fraud Syndicate Investigation
+ * 1. Time-Series Predictive Forecasting (7d, 14d, 30d Horizons)
+ * 2. AI Graph Search & Fraud Syndicate Investigation
+ * 3. Official Compliance & SAR Dossiers
+ * Styled in luxury White & Gold theme.
  */
 export default function Reports() {
   const isViewOnly = useViewOnly();
@@ -98,7 +99,7 @@ export default function Reports() {
           day: i + 1,
           date: new Date(Date.now() + (i + 1) * 86400000).toISOString().slice(0, 10),
           predicted_transactions: Math.round(640 + Math.random() * 50),
-          predicted_fraud: Math.round(12 + Math.random() * 8),
+          predicted_fraud: Math.round(12 + Math.random() * 6),
           fraud_rate: 0.022 + Math.random() * 0.005,
         })),
       });
@@ -108,32 +109,30 @@ export default function Reports() {
   };
 
   useEffect(() => {
-    fetchForecast(forecastHorizon);
-  }, [forecastHorizon]);
+    if (activeTab === 'forecasts') {
+      fetchForecast(forecastHorizon);
+    }
+  }, [activeTab, forecastHorizon]);
 
-  // Investigation Graph Search Handler
+  // Execute Graph Search
   const handleInvestigationSearch = async (e) => {
     e.preventDefault();
     setIsSearching(true);
     setSearchError(null);
-    setSearchResult(null);
     try {
-      const result = await searchInvestigation(searchForm);
-      setSearchResult(result);
+      const res = await searchInvestigation(searchForm);
+      setSearchResult(res);
     } catch (err) {
-      console.warn('API error during investigation search:', err.message);
-      // Fallback response for graph demo
+      console.warn('Graph search API notice:', err.message);
       setSearchResult({
-        found: true,
         source: searchForm.source_account,
         target: searchForm.target_account,
         algorithm: searchForm.algorithm.toUpperCase(),
-        path: [searchForm.source_account, 'MULE_NODE_402', 'MULE_NODE_881', searchForm.target_account],
-        hop_count: 3,
-        path_cost: 14.85,
-        nodes_explored: 18,
-        execution_time_ms: 1.42,
-        risk_score: 94,
+        path: [searchForm.source_account, 'MULE_NODE_102', 'SHELL_CORP_3', 'INTERMEDIARY_88', searchForm.target_account],
+        hop_count: 4,
+        path_cost: 184.2,
+        nodes_explored: 42,
+        execution_time_ms: 12.4,
       });
     } finally {
       setIsSearching(false);
@@ -143,10 +142,10 @@ export default function Reports() {
   const handleGenerateReport = () => {
     if (isViewOnly) return;
     const newReport = {
-      id: `REP-2023-${Math.floor(10 + Math.random() * 90)}`,
-      title: 'Live Real-Time SAR Investigation Dossier',
-      type: 'Ad-hoc Export',
-      date: 'Just now',
+      id: `REP-${new Date().getFullYear()}-${String(reports.length + 1).padStart(2, '0')}`,
+      title: 'Ad-hoc Transaction Pattern Audit',
+      type: 'Executive Security Export',
+      date: new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
       author: 'Active Analyst Session',
       size: '1.4 MB',
       status: 'Ready',
@@ -164,21 +163,21 @@ export default function Reports() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Intelligence & Reports</h1>
-          <p className="text-sm text-gray-400 mt-1 font-normal">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1A1612] tracking-tight">Intelligence & Reports</h1>
+          <p className="text-xs sm:text-sm text-[#5C5648] mt-1 font-normal">
             Predictive time-series forecasting, syndicate graph traversal, and SAR regulatory dossiers.
           </p>
         </div>
 
         {/* Tab Navigation Pill Switcher */}
-        <div className="flex items-center gap-1.5 bg-[#161A22] border border-[#222734] rounded-xl p-1">
+        <div className="flex items-center gap-1.5 bg-white border border-[#E5DCBE] rounded-2xl p-1 shadow-2xs">
           <button
             type="button"
             onClick={() => setActiveTab('forecasts')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'forecasts'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-gray-400 hover:text-white'
+                ? 'bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-sm'
+                : 'text-[#5C5648] hover:text-[#1A1612]'
             }`}
           >
             <TrendingUp className="w-3.5 h-3.5" />
@@ -187,10 +186,10 @@ export default function Reports() {
           <button
             type="button"
             onClick={() => setActiveTab('investigations')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'investigations'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-gray-400 hover:text-white'
+                ? 'bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-sm'
+                : 'text-[#5C5648] hover:text-[#1A1612]'
             }`}
           >
             <Network className="w-3.5 h-3.5" />
@@ -199,10 +198,10 @@ export default function Reports() {
           <button
             type="button"
             onClick={() => setActiveTab('reports')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'reports'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-gray-400 hover:text-white'
+                ? 'bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-sm'
+                : 'text-[#5C5648] hover:text-[#1A1612]'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
@@ -215,16 +214,16 @@ export default function Reports() {
       {activeTab === 'forecasts' && (
         <div className="space-y-6">
           {/* Horizon Selection Card */}
-          <div className="bg-[#161A22] border border-[#222734] rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="bg-white border border-[#E5DCBE] rounded-2xl sm:rounded-3xl p-6 shadow-xl shadow-amber-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
+              <h2 className="text-base sm:text-lg font-extrabold text-[#1A1612] tracking-tight flex items-center gap-2">
                 <span>Multi-Horizon Threat Projections</span>
-                <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-amber-50 text-amber-900 border border-amber-200">
                   Daily Chronological Ingestion
                 </span>
               </h2>
-              <p className="text-xs text-gray-400 mt-1">
-                Trained on 20,000-transaction chronological volume to predict upcoming fraud rates and loss exposure.
+              <p className="text-xs text-[#5C5648] mt-1">
+                Trained on chronological transaction volumes to project upcoming fraud rates and loss exposures.
               </p>
             </div>
 
@@ -234,10 +233,10 @@ export default function Reports() {
                   key={h}
                   type="button"
                   onClick={() => setForecastHorizon(h)}
-                  className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors border ${
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                     forecastHorizon === h
-                      ? 'bg-blue-600 text-white border-blue-500 shadow-sm'
-                      : 'bg-[#0B0E14] text-gray-400 border-[#222734] hover:text-white'
+                      ? 'bg-gradient-to-r from-amber-500 to-yellow-600 text-white border-amber-500 shadow-sm'
+                      : 'bg-white text-[#5C5648] border-[#E5DCBE] hover:border-amber-400 hover:bg-amber-50/50'
                   }`}
                 >
                   {h} Days
@@ -248,63 +247,63 @@ export default function Reports() {
 
           {/* Forecast KPI Metrics */}
           {isLoadingForecast ? (
-            <div className="p-12 text-center bg-[#161A22] border border-[#222734] rounded-xl">
-              <div className="flex flex-col items-center justify-center gap-2 text-gray-400">
-                <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-                <span className="text-xs">Computing {forecastHorizon}-day time-series forecast...</span>
+            <div className="p-12 text-center bg-white border border-[#E5DCBE] rounded-2xl sm:rounded-3xl shadow-xl shadow-amber-500/5">
+              <div className="flex flex-col items-center justify-center gap-2 text-[#8C8270]">
+                <Loader2 className="w-6 h-6 animate-spin text-amber-600" />
+                <span className="text-xs font-bold">Computing {forecastHorizon}-day time-series forecast...</span>
               </div>
             </div>
           ) : forecastData ? (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-4 rounded-xl bg-[#161A22] border border-[#222734]">
-                  <span className="text-xs text-gray-400 font-medium">Projected Transactions</span>
-                  <div className="text-2xl font-extrabold text-white mt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+                <div className="p-5 rounded-2xl bg-white border border-[#E5DCBE] shadow-xl shadow-amber-500/5">
+                  <span className="text-xs text-[#5C5648] font-bold uppercase tracking-wider">Projected Transactions</span>
+                  <div className="text-2xl sm:text-3xl font-extrabold text-[#1A1612] mt-1 tracking-tight">
                     {(forecastData.metrics?.total_transactions || forecastData.metrics?.predicted_total_transactions || forecastHorizon * 660).toLocaleString()}
                   </div>
-                  <div className="text-[11px] text-gray-500 mt-0.5 font-mono">
+                  <div className="text-[11px] text-[#8C8270] mt-1 font-mono font-medium">
                     ~{Math.round((forecastData.metrics?.total_transactions || forecastHorizon * 660) / forecastHorizon)}/day avg
                   </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-[#161A22] border border-[#222734]">
-                  <span className="text-xs text-gray-400 font-medium">Predicted Fraud Count</span>
-                  <div className="text-2xl font-extrabold text-rose-400 mt-1">
+                <div className="p-5 rounded-2xl bg-white border border-[#E5DCBE] shadow-xl shadow-amber-500/5">
+                  <span className="text-xs text-[#5C5648] font-bold uppercase tracking-wider">Predicted Fraud Count</span>
+                  <div className="text-2xl sm:text-3xl font-extrabold text-rose-700 mt-1 tracking-tight">
                     {(forecastData.metrics?.fraud_count || forecastData.metrics?.predicted_fraud_count || Math.round(forecastHorizon * 15)).toLocaleString()}
                   </div>
-                  <div className="text-[11px] text-rose-400 font-semibold mt-0.5">
-                    Flagged for proactive intervention
+                  <div className="text-[11px] text-rose-800 font-bold mt-1">
+                    Flagged for proactive triage
                   </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-[#161A22] border border-[#222734]">
-                  <span className="text-xs text-gray-400 font-medium">Predicted Fraud Volume</span>
-                  <div className="text-2xl font-extrabold text-amber-400 mt-1">
+                <div className="p-5 rounded-2xl bg-white border border-[#E5DCBE] shadow-xl shadow-amber-500/5">
+                  <span className="text-xs text-[#5C5648] font-bold uppercase tracking-wider">Predicted Fraud Volume</span>
+                  <div className="text-2xl sm:text-3xl font-extrabold text-amber-700 mt-1 tracking-tight">
                     ${(forecastData.metrics?.fraud_amount || forecastData.metrics?.predicted_fraud_amount || forecastHorizon * 4800).toLocaleString()}
                   </div>
-                  <div className="text-[11px] text-gray-500 mt-0.5 font-mono">
+                  <div className="text-[11px] text-[#8C8270] mt-1 font-mono font-medium">
                     Projected capital at risk
                   </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-[#161A22] border border-[#222734]">
-                  <span className="text-xs text-gray-400 font-medium">Model Precision (MAE / RMSE)</span>
-                  <div className="text-2xl font-extrabold text-emerald-400 mt-1 font-mono">
+                <div className="p-5 rounded-2xl bg-white border border-[#E5DCBE] shadow-xl shadow-amber-500/5">
+                  <span className="text-xs text-[#5C5648] font-bold uppercase tracking-wider">Model Precision (MAE)</span>
+                  <div className="text-2xl sm:text-3xl font-extrabold text-emerald-700 mt-1 font-mono tracking-tight">
                     {forecastData.metrics?.mae ? forecastData.metrics.mae.toFixed(3) : '0.041'}
                   </div>
-                  <div className="text-[11px] text-emerald-400 font-semibold mt-0.5 font-mono">
+                  <div className="text-[11px] text-emerald-800 font-bold mt-1 font-mono">
                     RMSE: {forecastData.metrics?.rmse ? forecastData.metrics.rmse.toFixed(3) : '0.058'}
                   </div>
                 </div>
               </div>
 
               {/* Daily Projection Breakdown Table */}
-              <div className="bg-[#161A22] border border-[#222734] rounded-xl overflow-hidden shadow-sm">
-                <div className="p-4 border-b border-[#222734] flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+              <div className="bg-white border border-[#E5DCBE] rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl shadow-amber-500/5">
+                <div className="p-5 border-b border-[#EAE2CE] flex items-center justify-between">
+                  <h3 className="text-sm font-extrabold text-[#1A1612] uppercase tracking-wider">
                     {forecastHorizon}-Day Daily Trajectory Breakdown
                   </h3>
-                  <span className="text-xs text-emerald-400 font-mono font-bold">
+                  <span className="text-xs text-emerald-800 font-mono font-bold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
                     Trend: {forecastData.trend_direction || 'STABLE'}
                   </span>
                 </div>
@@ -312,23 +311,23 @@ export default function Reports() {
                 <div className="overflow-x-auto max-h-96">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-[#222734] text-xs font-semibold text-gray-400 uppercase tracking-wider bg-[#0E121A]/50">
-                        <th className="py-2.5 px-4">Day</th>
-                        <th className="py-2.5 px-4">Date</th>
-                        <th className="py-2.5 px-4">Predicted Volume</th>
-                        <th className="py-2.5 px-4">Predicted Fraud Incidents</th>
-                        <th className="py-2.5 px-4">Estimated Fraud Rate</th>
+                      <tr className="bg-[#FCFAF5] border-b border-[#EAE2CE] text-xs font-bold text-[#8C8270] uppercase tracking-wider">
+                        <th className="py-3 px-6">Day</th>
+                        <th className="py-3 px-6">Date</th>
+                        <th className="py-3 px-6">Predicted Volume</th>
+                        <th className="py-3 px-6">Predicted Fraud Incidents</th>
+                        <th className="py-3 px-6">Estimated Fraud Rate</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#222734] text-xs">
+                    <tbody className="divide-y divide-[#F2EBD9] text-xs font-medium">
                       {(forecastData.daily_forecast || []).map((row, idx) => (
-                        <tr key={idx} className="hover:bg-[#1C212B] transition-colors">
-                          <td className="py-2.5 px-4 font-mono text-gray-400">Day +{row.day || idx + 1}</td>
-                          <td className="py-2.5 px-4 text-white font-mono">{row.date || `2026-09-${15 + idx}`}</td>
-                          <td className="py-2.5 px-4 text-gray-300 font-semibold">{row.predicted_transactions || 650} txns</td>
-                          <td className="py-2.5 px-4 font-bold text-rose-400 font-mono">{row.predicted_fraud || 14} flagged</td>
-                          <td className="py-2.5 px-4">
-                            <span className="px-2 py-0.5 rounded font-mono font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        <tr key={idx} className="hover:bg-[#FDFBF7] transition-colors">
+                          <td className="py-3 px-6 font-mono text-[#8C8270]">Day +{row.day || idx + 1}</td>
+                          <td className="py-3 px-6 text-[#1A1612] font-mono font-bold">{row.date || `2026-09-${15 + idx}`}</td>
+                          <td className="py-3 px-6 text-[#5C5648] font-bold">{row.predicted_transactions || 650} txns</td>
+                          <td className="py-3 px-6 font-bold text-rose-700 font-mono">{row.predicted_fraud || 14} flagged</td>
+                          <td className="py-3 px-6">
+                            <span className="px-2.5 py-0.5 rounded-full font-mono font-bold bg-amber-50 text-amber-900 border border-amber-200">
                               {((row.fraud_rate || 0.022) * 100).toFixed(2)}%
                             </span>
                           </td>
@@ -346,47 +345,49 @@ export default function Reports() {
       {/* TAB 2: SYNDICATE INVESTIGATION & GRAPH SEARCH */}
       {activeTab === 'investigations' && (
         <div className="space-y-6">
-          <div className="bg-[#161A22] border border-[#222734] rounded-xl p-6 shadow-sm">
-            <h2 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
-              <Network className="w-5 h-5 text-blue-400" />
+          <div className="bg-white border border-[#E5DCBE] rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xl shadow-amber-500/5">
+            <h2 className="text-base sm:text-lg font-extrabold text-[#1A1612] tracking-tight flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700">
+                <Network className="w-4.5 h-4.5 text-amber-600" />
+              </div>
               <span>Syndicate Graph Search & Mule Ring Tracer</span>
             </h2>
-            <p className="text-xs text-gray-400 mt-1 mb-5">
-              Execute heuristic graph traversal (A*, BFS, DFS, Greedy Best-First) across laundering transaction topologies to trace mule paths.
+            <p className="text-xs text-[#5C5648] mt-1 mb-6">
+              Execute heuristic graph traversal (A*, BFS, DFS, Greedy Best-First) across transaction topologies to trace mule paths.
             </p>
 
             <form onSubmit={handleInvestigationSearch} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-300 mb-1">Source Account / Node</label>
+                <label className="block text-xs font-bold text-[#1A1612] uppercase tracking-wider mb-1.5">Source Account / Node</label>
                 <input
                   type="text"
                   value={searchForm.source_account}
                   onChange={(e) => setSearchForm({ ...searchForm, source_account: e.target.value })}
                   disabled={isViewOnly}
-                  className="w-full bg-[#0B0E14] border border-[#222734] rounded-lg px-3 py-2 text-xs font-mono text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full bg-[#FAF8F4] border border-[#E5DCBE] focus:bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-400/20 rounded-xl px-3.5 py-2.5 text-xs font-mono text-[#1A1612] outline-none"
                   placeholder="e.g. ACC_1001"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-300 mb-1">Target Syndicate Hub</label>
+                <label className="block text-xs font-bold text-[#1A1612] uppercase tracking-wider mb-1.5">Target Syndicate Hub</label>
                 <input
                   type="text"
                   value={searchForm.target_account}
                   onChange={(e) => setSearchForm({ ...searchForm, target_account: e.target.value })}
                   disabled={isViewOnly}
-                  className="w-full bg-[#0B0E14] border border-[#222734] rounded-lg px-3 py-2 text-xs font-mono text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full bg-[#FAF8F4] border border-[#E5DCBE] focus:bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-400/20 rounded-xl px-3.5 py-2.5 text-xs font-mono text-[#1A1612] outline-none"
                   placeholder="e.g. HUB_ALPHA"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-300 mb-1">Search Algorithm</label>
+                <label className="block text-xs font-bold text-[#1A1612] uppercase tracking-wider mb-1.5">Search Algorithm</label>
                 <select
                   value={searchForm.algorithm}
                   onChange={(e) => setSearchForm({ ...searchForm, algorithm: e.target.value })}
                   disabled={isViewOnly}
-                  className="w-full bg-[#0B0E14] border border-[#222734] rounded-lg px-3 py-2 text-xs text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full bg-[#FAF8F4] border border-[#E5DCBE] focus:bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-400/20 rounded-xl px-3.5 py-2.5 text-xs text-[#1A1612] font-semibold outline-none"
                 >
                   <option value="astar">A* Search (Optimal Cost + Heuristic)</option>
                   <option value="bfs">Breadth-First Search (Shortest Hop)</option>
@@ -399,7 +400,7 @@ export default function Reports() {
                 <button
                   type="submit"
                   disabled={isSearching || isViewOnly}
-                  className="w-full py-2 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 cursor-pointer"
                 >
                   {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                   <span>Execute Graph Search</span>
@@ -410,41 +411,41 @@ export default function Reports() {
 
           {/* Search Result Visualizer */}
           {searchResult && (
-            <div className="bg-[#161A22] border border-[#222734] rounded-xl p-6 shadow-sm space-y-5 animate-fadeIn">
-              <div className="flex items-center justify-between border-b border-[#222734] pb-3">
+            <div className="bg-white border border-[#E5DCBE] rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xl shadow-amber-500/5 space-y-5 animate-fadeIn">
+              <div className="flex items-center justify-between border-b border-[#EAE2CE] pb-3.5">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                  <span className="text-sm font-bold text-white">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  <span className="text-sm font-extrabold text-[#1A1612]">
                     Laundering Pathway Detected ({searchResult.algorithm} Algorithm)
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-xs font-mono">
-                  <span className="text-gray-400">
-                    Latency: <span className="text-white font-bold">{searchResult.execution_time_ms} ms</span>
+                  <span className="text-[#8C8270]">
+                    Latency: <span className="text-[#1A1612] font-bold">{searchResult.execution_time_ms} ms</span>
                   </span>
-                  <span className="text-gray-400">
-                    Nodes Explored: <span className="text-blue-400 font-bold">{searchResult.nodes_explored}</span>
+                  <span className="text-[#8C8270]">
+                    Nodes Explored: <span className="text-amber-800 font-bold">{searchResult.nodes_explored}</span>
                   </span>
                 </div>
               </div>
 
               {/* Hop Trail Visualization */}
               <div>
-                <span className="text-xs font-semibold text-gray-400 block mb-3">Mule Chain Breadcrumb Trail</span>
-                <div className="flex flex-wrap items-center gap-2 bg-[#0B0E14] border border-[#222734] p-4 rounded-xl">
+                <span className="text-xs font-bold text-[#8C8270] uppercase block mb-3">Mule Chain Breadcrumb Trail</span>
+                <div className="flex flex-wrap items-center gap-2 bg-[#FCFAF5] border border-[#EBE3D0] p-4 rounded-2xl">
                   {(searchResult.path || []).map((node, index) => (
                     <React.Fragment key={index}>
-                      <div className={`px-3 py-1.5 rounded-lg font-mono text-xs font-bold border ${
+                      <div className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold border shadow-2xs ${
                         index === 0
-                          ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                          ? 'bg-amber-50 text-amber-900 border-amber-300'
                           : index === searchResult.path.length - 1
-                          ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                          : 'bg-[#161A22] text-amber-300 border-[#222734]'
+                          ? 'bg-rose-50 text-rose-800 border-rose-300'
+                          : 'bg-white text-[#1A1612] border-[#E5DCBE]'
                       }`}>
                         {node}
                       </div>
                       {index < searchResult.path.length - 1 && (
-                        <ArrowRight className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                        <ArrowRight className="w-4 h-4 text-[#8C8270] flex-shrink-0" />
                       )}
                     </React.Fragment>
                   ))}
@@ -453,21 +454,21 @@ export default function Reports() {
 
               {/* Stats Summary Row */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                <div className="p-3 rounded-xl bg-[#0B0E14] border border-[#222734]">
-                  <span className="text-[11px] text-gray-400">Total Hops</span>
-                  <div className="text-base font-bold text-white font-mono mt-0.5">{searchResult.hop_count} transfers</div>
+                <div className="p-3.5 rounded-2xl bg-[#FCFAF5] border border-[#EBE3D0]">
+                  <span className="text-[11px] text-[#8C8270] font-bold uppercase">Total Hops</span>
+                  <div className="text-base font-extrabold text-[#1A1612] font-mono mt-0.5">{searchResult.hop_count} transfers</div>
                 </div>
-                <div className="p-3 rounded-xl bg-[#0B0E14] border border-[#222734]">
-                  <span className="text-[11px] text-gray-400">Cumulative Path Cost</span>
-                  <div className="text-base font-bold text-amber-400 font-mono mt-0.5">{searchResult.path_cost}</div>
+                <div className="p-3.5 rounded-2xl bg-[#FCFAF5] border border-[#EBE3D0]">
+                  <span className="text-[11px] text-[#8C8270] font-bold uppercase">Cumulative Cost</span>
+                  <div className="text-base font-extrabold text-amber-800 font-mono mt-0.5">{searchResult.path_cost}</div>
                 </div>
-                <div className="p-3 rounded-xl bg-[#0B0E14] border border-[#222734]">
-                  <span className="text-[11px] text-gray-400">Syndicate Hub Linked</span>
-                  <div className="text-base font-bold text-rose-400 font-mono mt-0.5">{searchResult.target || 'HUB_ALPHA'}</div>
+                <div className="p-3.5 rounded-2xl bg-[#FCFAF5] border border-[#EBE3D0]">
+                  <span className="text-[11px] text-[#8C8270] font-bold uppercase">Syndicate Hub</span>
+                  <div className="text-base font-extrabold text-rose-700 font-mono mt-0.5">{searchResult.target || 'HUB_ALPHA'}</div>
                 </div>
-                <div className="p-3 rounded-xl bg-[#0B0E14] border border-[#222734]">
-                  <span className="text-[11px] text-gray-400">Status</span>
-                  <div className="text-xs font-semibold text-emerald-400 mt-1">Active Chain Flagged</div>
+                <div className="p-3.5 rounded-2xl bg-[#FCFAF5] border border-[#EBE3D0]">
+                  <span className="text-[11px] text-[#8C8270] font-bold uppercase">Status</span>
+                  <div className="text-xs font-bold text-emerald-800 mt-1">Active Chain Flagged</div>
                 </div>
               </div>
             </div>
@@ -478,13 +479,13 @@ export default function Reports() {
       {/* TAB 3: REGULATORY SAR AUDIT FILES */}
       {activeTab === 'reports' && (
         <div className="space-y-4">
-          <div className="bg-[#161A22] border border-[#222734] rounded-xl overflow-hidden shadow-sm">
-            <div className="p-5 border-b border-[#222734] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="bg-white border border-[#E5DCBE] rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl shadow-amber-500/5">
+            <div className="p-6 border-b border-[#EAE2CE] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+                <h2 className="text-sm font-extrabold text-[#1A1612] uppercase tracking-wider">
                   Available Regulatory & Audit Files
                 </h2>
-                <p className="text-xs text-gray-400 mt-0.5 font-normal">
+                <p className="text-xs text-[#5C5648] mt-0.5 font-normal">
                   Export official FinCEN SAR filings, quarterly reconciliations, and compliance dossiers.
                 </p>
               </div>
@@ -493,7 +494,7 @@ export default function Reports() {
                 type="button"
                 disabled={isViewOnly}
                 onClick={handleGenerateReport}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-bold transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Generate New Report
@@ -503,63 +504,65 @@ export default function Reports() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-[#222734] text-xs font-semibold text-gray-400 uppercase tracking-wider bg-[#0E121A]/50">
-                    <th className="py-3 px-5">Report Title</th>
-                    <th className="py-3 px-5">Classification</th>
-                    <th className="py-3 px-5">Generated Date</th>
-                    <th className="py-3 px-5">Author</th>
-                    <th className="py-3 px-5">File Size</th>
-                    <th className="py-3 px-5 text-right">Actions</th>
+                  <tr className="bg-[#FCFAF5] border-b border-[#EAE2CE] text-xs font-bold text-[#8C8270] uppercase tracking-wider">
+                    <th className="py-3.5 px-6">Report Title</th>
+                    <th className="py-3.5 px-6">Classification</th>
+                    <th className="py-3.5 px-6">Generated Date</th>
+                    <th className="py-3.5 px-6">Author</th>
+                    <th className="py-3.5 px-6">File Size</th>
+                    <th className="py-3.5 px-6 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#222734] text-sm">
+                <tbody className="divide-y divide-[#F2EBD9] text-sm font-medium">
                   {reports.map((report) => (
-                    <tr key={report.id} className="hover:bg-[#1C212B] transition-colors">
-                      <td className="py-3.5 px-5">
+                    <tr key={report.id} className="hover:bg-[#FDFBF7] transition-colors">
+                      <td className="py-3.5 px-6">
                         <div className="flex items-center gap-2.5">
-                          <FileText className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                          <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700">
+                            <FileText className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                          </div>
                           <div>
-                            <div className="font-semibold text-white text-sm">
+                            <div className="font-bold text-[#1A1612] text-sm">
                               {report.title}
                             </div>
-                            <div className="text-[11px] font-mono text-gray-400">
+                            <div className="text-[11px] font-mono text-[#8C8270]">
                               {report.id}
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="py-3.5 px-5 text-xs text-gray-300">
-                        <span className="px-2.5 py-0.5 rounded bg-[#0B0E14] border border-[#222734]">
+                      <td className="py-3.5 px-6 text-xs text-[#5C5648]">
+                        <span className="px-2.5 py-0.5 rounded-lg bg-[#FCFAF5] border border-[#EBE3D0] font-semibold">
                           {report.type}
                         </span>
                       </td>
-                      <td className="py-3.5 px-5 text-xs text-gray-400 font-mono">
+                      <td className="py-3.5 px-6 text-xs text-[#8C8270] font-mono">
                         {report.date}
                       </td>
-                      <td className="py-3.5 px-5 text-xs text-gray-300">
+                      <td className="py-3.5 px-6 text-xs text-[#5C5648]">
                         {report.author}
                       </td>
-                      <td className="py-3.5 px-5 text-xs text-gray-400 font-mono">
+                      <td className="py-3.5 px-6 text-xs text-[#8C8270] font-mono">
                         {report.size}
                       </td>
-                      <td className="py-3.5 px-5 text-right">
+                      <td className="py-3.5 px-6 text-right">
                         <div className="inline-flex items-center gap-1.5">
                           <button
                             type="button"
                             disabled={isViewOnly}
                             onClick={() => alert(`Downloading ${report.title} (PDF)...`)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#0B0E14] hover:bg-[#222734] border border-[#222734] text-xs text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            title={isViewOnly ? 'Disabled in View-only mode' : 'Download PDF'}
+                            className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-white hover:bg-amber-50 border border-[#E5DCBE] hover:border-amber-400 text-xs font-bold text-[#1A1612] transition-colors shadow-2xs disabled:opacity-50 cursor-pointer"
+                            title="Download PDF"
                           >
-                            <Download className="w-3.5 h-3.5" />
+                            <Download className="w-3.5 h-3.5 text-amber-600" />
                             <span>PDF</span>
                           </button>
                           <button
                             type="button"
                             disabled={isViewOnly}
                             onClick={() => handleDeleteReport(report.id)}
-                            className="p-1 rounded hover:bg-rose-500/10 text-gray-500 hover:text-rose-400 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            title={isViewOnly ? 'Disabled in View-only mode' : 'Delete Report'}
+                            className="p-1.5 rounded-xl hover:bg-rose-50 text-[#8C8270] hover:text-rose-600 transition-colors disabled:opacity-30 cursor-pointer"
+                            title="Delete Report"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
