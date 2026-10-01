@@ -254,9 +254,30 @@ class TransactionService:
         location: Optional[str] = None,
         min_amount: Optional[float] = None,
         max_amount: Optional[float] = None,
+        search: Optional[str] = None,
+        status: Optional[str] = None,
     ) -> TransactionListResponse:
         """Query paginated transactions with dynamic filters."""
+        from sqlalchemy import or_
+
         stmt = select(Transaction)
+
+        if search:
+            search_clean = f"%{search.strip()}%"
+            stmt = stmt.where(
+                or_(
+                    Transaction.id.ilike(search_clean),
+                    Transaction.customer_id.ilike(search_clean),
+                    Transaction.location.ilike(search_clean),
+                )
+            )
+
+        if status and status.lower() != "all":
+            stat_l = status.lower()
+            if stat_l in ["flagged", "declined", "fraud"]:
+                stmt = stmt.where(Transaction.is_fraud == True)
+            elif stat_l in ["approved", "cleared"]:
+                stmt = stmt.where(Transaction.is_fraud == False)
 
         if customer_id:
             stmt = stmt.where(Transaction.customer_id == customer_id)

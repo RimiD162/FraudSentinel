@@ -11,7 +11,7 @@ import { ShieldCheck, ShieldAlert, Eye, Home } from 'lucide-react';
  * and responsive scrollable main container.
  */
 export default function DashboardLayout() {
-  const { role, roleMeta } = useRole();
+  const { role, currentUser, apiStatus } = useRole();
   const location = useLocation();
 
   const getRoleBadge = () => {
@@ -42,6 +42,31 @@ export default function DashboardLayout() {
     }
   };
 
+  const getApiStatusBadge = () => {
+    if (apiStatus === 'online') {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono" title="Backend FastAPI connected">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          API Live
+        </span>
+      );
+    }
+    if (apiStatus === 'connecting') {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+          Connecting API...
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20 font-mono" title="Backend FastAPI offline">
+        <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+        API Offline
+      </span>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-[#0B0E14] text-white flex">
       {/* Fixed Sidebar */}
@@ -63,6 +88,11 @@ export default function DashboardLayout() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Live API status badge */}
+            <div className="hidden sm:block">
+              {getApiStatusBadge()}
+            </div>
+
             {/* Active role pill badge */}
             <div className="hidden sm:block">
               {getRoleBadge()}

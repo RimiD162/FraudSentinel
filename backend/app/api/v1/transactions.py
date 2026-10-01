@@ -14,6 +14,7 @@ from app.schemas.transaction import (
     TransactionAnalyzeResponse,
     TransactionCreate,
     TransactionListResponse,
+    TransactionResponse,
 )
 from app.services.transaction_service import TransactionService, get_transaction_service
 
@@ -63,6 +64,8 @@ def list_transactions(
     location: Optional[str] = Query(None, description="Filter by location state/name"),
     min_amount: Optional[float] = Query(None, ge=0.0, description="Minimum amount"),
     max_amount: Optional[float] = Query(None, ge=0.0, description="Maximum amount"),
+    search: Optional[str] = Query(None, description="Text search across transaction ID, customer, location"),
+    status_filter: Optional[str] = Query(None, alias="status", description="Filter by status (Approved, Flagged, Under Review, Declined)"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_viewer),
     service: TransactionService = Depends(get_transaction_service),
@@ -77,4 +80,27 @@ def list_transactions(
         location=location,
         min_amount=min_amount,
         max_amount=max_amount,
+        search=search,
+        status=status_filter,
     )
+
+
+@router.get(
+    "/{transaction_id}",
+    response_model=TransactionResponse,
+    summary="Get Transaction Details",
+    description="Retrieve details of a single transaction by ID.",
+)
+def get_transaction(
+    transaction_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_viewer),
+    service: TransactionService = Depends(get_transaction_service),
+) -> TransactionResponse:
+    tx = service.get_transaction_by_id(db=db, tx_id=transaction_id)
+    if not tx:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Transaction '{transaction_id}' not found",
+        )
+    return TransactionResponse.model_validate(tx)

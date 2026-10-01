@@ -20,9 +20,8 @@ chromadb==1.5.9
 click==8.5.0
 cloudpickle==3.1.2
 colorama==0.4.6
-contourpy==1.3.3
--e git+https://github.com/Ishitadas03/CrimeMind.git@baef443d6d4b628e10ed1b011dc5828fe2fee826#egg=crimemind_backend&subdirectory=backend
-cryptography==41.0.4
+contourpy>=1.3.0
+cryptography>=41.0.0
 cycler==0.12.1
 distro==1.9.0
 Django==3.2.25

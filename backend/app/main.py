@@ -69,6 +69,50 @@ app.add_middleware(
 app.include_router(api_router, prefix="/api/v1")
 
 
+@app.on_event("startup")
+def startup_db_init():
+    try:
+        from app.core.database import Base, SessionLocal, engine
+        from app.core.security import get_password_hash
+        from app.models import Role, User
+
+        # Auto-create tables if they don't exist
+        Base.metadata.create_all(bind=engine)
+
+        with SessionLocal() as db:
+            if not db.query(Role).first():
+                roles_data = [
+                    {"name": "admin", "description": "Full system access — manage users, settings, all data"},
+                    {"name": "analyst", "description": "Investigate fraud alerts, view analytics, run models"},
+                    {"name": "viewer", "description": "Read-only access to dashboards and reports"},
+                ]
+                roles = {}
+                for data in roles_data:
+                    role = Role(**data)
+                    db.add(role)
+                    roles[data["name"]] = role
+                db.flush()
+
+                # Seed default users if none exist
+                users_data = [
+                    {"email": "admin@fraudsentinel.com", "password": "admin123", "full_name": "System Administrator", "role": roles["admin"]},
+                    {"email": "analyst@fraudsentinel.com", "password": "analyst123", "full_name": "Senior Fraud Analyst", "role": roles["analyst"]},
+                    {"email": "viewer@fraudsentinel.com", "password": "viewer123", "full_name": "Auditor & Compliance Viewer", "role": roles["viewer"]},
+                ]
+                for u in users_data:
+                    user = User(
+                        email=u["email"],
+                        hashed_password=get_password_hash(u["password"]),
+                        full_name=u["full_name"],
+                        role_id=u["role"].id,
+                        is_active=True,
+                    )
+                    db.add(user)
+                db.commit()
+    except Exception as e:
+        print(f"[WARN] Database initialization notice: {e}")
+
+
 @app.get("/", response_model=RootResponse, tags=["System"])
 def read_root():
     return {

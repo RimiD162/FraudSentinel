@@ -52,3 +52,18 @@ class AlertListResponse(BaseModel):
     page_size: int
     total_pages: int
     items: List[FraudAlertResponse]
+
+
+class AlertUpdate(BaseModel):
+    """Schema for updating an alert status."""
+
+    status: Optional[str] = Field(None, description="Status: flagged, under_review, cleared, confirmed")
+    severity: Optional[str] = Field(None, description="Severity: low, medium, high, critical")
+    description: Optional[str] = None
+
+
+class BulkResolveResponse(BaseModel):
+    """Response for bulk resolving alerts."""
+
+    resolved_count: int
+    message: str

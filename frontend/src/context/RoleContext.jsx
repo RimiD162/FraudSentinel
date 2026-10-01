@@ -1,10 +1,10 @@
-import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { ROLE_PERMISSIONS, ROLES } from '../config/permissions.js';
-import { login, setAuthToken } from '../services/api.js';
+import { loginRole, login, getMe, getHealth, setAuthToken } from '../services/api.js';
 
 const RoleContext = createContext(null);
 
-const ROLE_CREDENTIALS = {
+export const ROLE_CREDENTIALS = {
   admin: { email: 'admin@fraudsentinel.com', password: 'admin123' },
   analyst: { email: 'analyst@fraudsentinel.com', password: 'analyst123' },
   viewer: { email: 'viewer@fraudsentinel.com', password: 'viewer123' },
@@ -12,38 +12,79 @@ const ROLE_CREDENTIALS = {
 
 /**
  * RoleProvider Component
- * Manages active role permissions and automatically synchronizes JWT authentication
- * with the FastAPI REST API backend.
+ * Manages active user role, permissions, and synchronizes JWT bearer authentication
+ * with the FastAPI backend.
  */
 export function RoleProvider({ children }) {
   const defaultRole = (import.meta.env?.VITE_DEFAULT_ROLE || 'admin').toLowerCase();
-  const [role, setRole] = useState(ROLE_PERMISSIONS[defaultRole] ? defaultRole : 'admin');
-  const [authUser, setAuthUser] = useState(null);
-  const [authLoading, setAuthLoading] = useState(false);
+  const [role, setRoleState] = useState(ROLE_PERMISSIONS[defaultRole] ? defaultRole : 'admin');
+  const [currentUser, setCurrentUser] = useState(null);
+  const [apiStatus, setApiStatus] = useState('connecting'); // 'online' | 'connecting' | 'offline'
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [authError, setAuthError] = useState(null);
 
-  // Sync active role with FastAPI JWT authentication backend
-  useEffect(() => {
-    let isMounted = true;
-    async function syncBackendAuth() {
-      const creds = ROLE_CREDENTIALS[role] || ROLE_CREDENTIALS.admin;
-      setAuthLoading(true);
-      try {
-        const res = await login(creds.email, creds.password);
-        if (isMounted && res && res.access_token) {
-          setAuthUser(res);
-        }
-      } catch (err) {
-        console.warn(`[RoleContext] Auto-auth for ${role} (${creds.email}):`, err.message);
-      } finally {
-        if (isMounted) setAuthLoading(false);
+  // Authenticate against backend on role change
+  const syncRoleAuth = useCallback(async (targetRole) => {
+    setIsAuthenticating(true);
+    setAuthError(null);
+    try {
+      const loginResp = await loginRole(targetRole);
+      if (loginResp?.access_token) {
+        setCurrentUser({
+          id: loginResp.user_id,
+          email: loginResp.email,
+          fullName: loginResp.full_name,
+          role: loginResp.role,
+        });
+        setApiStatus('online');
       }
+    } catch (err) {
+      console.warn(`[RoleContext] Backend auth notice for ${targetRole}:`, err.message);
+      // Check health directly
+      try {
+        const h = await getHealth();
+        if (h?.status === 'healthy' || h?.status === 'running') {
+          setApiStatus('online');
+        } else {
+          setApiStatus('offline');
+        }
+      } catch {
+        setApiStatus('offline');
+      }
+      setAuthError(err.message);
+    } finally {
+      setIsAuthenticating(false);
     }
+  }, []);
 
-    syncBackendAuth();
-    return () => {
-      isMounted = false;
-    };
-  }, [role]);
+  useEffect(() => {
+    syncRoleAuth(role);
+  }, [role, syncRoleAuth]);
+
+  // Periodic health check every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const h = await getHealth();
+        if (h?.status === 'healthy' || h?.status === 'running') {
+          setApiStatus('online');
+        } else {
+          setApiStatus('offline');
+        }
+      } catch {
+        setApiStatus('offline');
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const setRole = (newRole) => {
+    const normalized = newRole.toLowerCase();
+    if (ROLE_PERMISSIONS[normalized]) {
+      setRoleState(normalized);
+    }
+  };
 
   const value = useMemo(() => {
     const currentPermissions = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.admin;
@@ -61,20 +102,25 @@ export function RoleProvider({ children }) {
       roles: ROLES,
       roleMeta: currentRoleMeta,
       permissions: currentPermissions,
-      authUser,
-      authLoading,
+      currentUser,
+      authUser: currentUser,
+      authLoading: isAuthenticating,
+      apiStatus,
+      isAuthenticating,
+      authError,
+      syncRoleAuth,
       getPermission,
       isViewOnly,
       isAllowed,
       isFull,
     };
-  }, [role, authUser, authLoading]);
+  }, [role, currentUser, isAuthenticating, apiStatus, authError, syncRoleAuth]);
 
   return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>;
 }
 
 /**
- * Custom hook to access role permissions and switcher state
+ * Custom hook to access role permissions, user, and API state
  */
 export function useRole() {
   const context = useContext(RoleContext);

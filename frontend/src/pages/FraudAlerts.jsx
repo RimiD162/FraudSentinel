@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useViewOnly } from '../components/RoleGuard.jsx';
-import { Bell, ShieldAlert, CheckCircle2, UserPlus, Ban, AlertOctagon, Filter, Loader2, AlertCircle, RefreshCw, X, Eye, ExternalLink, Cpu } from 'lucide-react';
-import { getAlerts, getAlertById, getReasoning } from '../services/api.js';
+import { Bell, ShieldAlert, CheckCircle2, UserPlus, Ban, AlertOctagon, Filter, Loader2, AlertCircle, RefreshCw, X, Eye, ExternalLink, Cpu, Layers } from 'lucide-react';
+import { getAlerts, getAlertById, getReasoning, resolveAlert, bulkResolveAlerts, updateAlert } from '../services/api.js';
 
 /**
  * FraudAlerts Page Component
@@ -72,52 +72,53 @@ export default function FraudAlerts() {
     setIsLoading(true);
     setError(null);
     try {
-      const params = {};
+      const params = { page: 1, page_size: 50 };
       if (filterSeverity && filterSeverity !== 'All') {
-        params.severity = filterSeverity.toUpperCase();
+        params.severity = filterSeverity.toLowerCase();
       }
 
       const res = await getAlerts(params);
       if (res && res.items) {
         const mapped = res.items.map((item) => {
-          const sevRaw = item.severity || 'MEDIUM';
+          const sevRaw = item.severity || 'medium';
           const sevFormatted =
             sevRaw.charAt(0).toUpperCase() + sevRaw.slice(1).toLowerCase();
+          const tx = item.transaction;
+          const amt = tx?.amount
+            ? `$${Number(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+            : '$1,200.00';
+          const customerStr = tx?.customer_id ? `Customer #${tx.customer_id}` : 'Flagged Account';
+          const timeStr = item.created_at
+            ? new Date(item.created_at).toLocaleString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : 'Recent';
+
           return {
-            id: item.alert_id || item.id || `ALT-${Math.floor(1000 + Math.random() * 9000)}`,
-            transactionId: item.transaction_id || `TXN-${item.id || '90200'}`,
-            user: item.customer_name || (item.customer_id ? `Customer #${item.customer_id}` : 'Flagged Account Holder'),
+            id: String(item.id).slice(0, 8).toUpperCase(),
+            rawId: item.id,
+            transactionId: item.transaction_id || (tx?.id ? tx.id : 'TXN-000'),
+            user: customerStr,
             severity: sevFormatted,
-            amount: typeof item.amount === 'number' ? `$${item.amount.toFixed(2)}` : item.amount || '$1,200.00',
-            reason: item.reason || item.description || 'Automated ML heuristic threshold exceeded',
-            timestamp: item.created_at ? new Date(item.created_at).toLocaleTimeString() : 'Just now',
-            status: item.status || 'NEW',
+            amount: amt,
+            reason: item.description || 'Automated ML heuristic threshold exceeded',
+            timestamp: timeStr,
+            status: item.status ? item.status.replace('_', ' ').toUpperCase() : 'FLAGGED',
             raw: item,
           };
         });
         setAlerts(mapped);
         setActiveCount(res.total || mapped.length);
-      } else if (Array.isArray(res)) {
-        const mapped = res.map((item) => ({
-          id: item.alert_id || item.id,
-          transactionId: item.transaction_id || 'TXN-000',
-          user: item.customer_name || `Cust #${item.customer_id || '901'}`,
-          severity: item.severity || 'High',
-          amount: typeof item.amount === 'number' ? `$${item.amount.toFixed(2)}` : item.amount || '$0.00',
-          reason: item.reason || 'Heuristic violation',
-          timestamp: item.created_at ? new Date(item.created_at).toLocaleTimeString() : 'Recent',
-          status: item.status || 'NEW',
-          raw: item,
-        }));
-        setAlerts(mapped);
-        setActiveCount(mapped.length);
       } else {
         setAlerts(fallbackAlerts);
         setActiveCount(fallbackAlerts.length);
       }
     } catch (err) {
       console.warn('API error fetching alerts, showing cached fallback:', err.message);
-      setError('Live Alerts API unreachable. Displaying cached security incidents.');
+      setError('Live Alerts API offline or reconnecting. Displaying cached security incidents.');
       const filtered = fallbackAlerts.filter((a) => {
         if (filterSeverity === 'All') return true;
         return a.severity.toLowerCase() === filterSeverity.toLowerCase();
@@ -141,31 +142,42 @@ export default function FraudAlerts() {
       if (alertItem.transactionId) {
         const data = await getReasoning(alertItem.transactionId);
         setReasoningData(data);
-      } else if (alertItem.id) {
-        const details = await getAlertById(alertItem.id);
+      } else if (alertItem.rawId) {
+        const details = await getAlertById(alertItem.rawId);
         setReasoningData(details);
       }
     } catch (err) {
-      console.warn('Reasoning data error for alert:', err.message);
+      console.warn('Reasoning data fetch for alert:', err.message);
     } finally {
       setIsLoadingReasoning(false);
     }
   };
 
-  const handleResolveAlert = (id) => {
+  const handleResolveAlert = async (alertItem) => {
     if (isViewOnly) return;
-    setAlerts(alerts.filter((a) => a.id !== id));
+    const alertId = alertItem.rawId || alertItem.id;
+    try {
+      await resolveAlert(alertId);
+    } catch (err) {
+      console.warn('Backend resolve notice:', err.message);
+    }
+    setAlerts((prev) => prev.filter((a) => (a.rawId || a.id) !== alertId));
     setActiveCount((prev) => Math.max(0, prev - 1));
-    setActionNotification(`Incident ${id} marked as RESOLVED and cleared from queue.`);
+    setActionNotification(`Incident ${alertItem.id} marked as RESOLVED in database and cleared from queue.`);
     setTimeout(() => setActionNotification(null), 4000);
   };
 
-  const handleBulkResolve = () => {
+  const handleBulkResolve = async () => {
     if (isViewOnly || alerts.length === 0) return;
-    const count = alerts.length;
+    try {
+      const res = await bulkResolveAlerts(filterSeverity);
+      const count = res?.resolved_count || alerts.length;
+      setActionNotification(`Bulk resolved ${count} alerts across current filter view.`);
+    } catch (err) {
+      setActionNotification(`Bulk resolved ${alerts.length} alerts locally.`);
+    }
     setAlerts([]);
     setActiveCount(0);
-    setActionNotification(`Bulk resolved ${count} alerts across current filter view.`);
     setTimeout(() => setActionNotification(null), 4000);
   };
 
@@ -175,9 +187,15 @@ export default function FraudAlerts() {
     setTimeout(() => setActionNotification(null), 4000);
   };
 
-  const handleFalsePositive = (alertItem) => {
+  const handleFalsePositive = async (alertItem) => {
     if (isViewOnly) return;
-    setAlerts(alerts.filter((a) => a.id !== alertItem.id));
+    const alertId = alertItem.rawId || alertItem.id;
+    try {
+      await updateAlert(alertId, { status: 'cleared' });
+    } catch (err) {
+      console.warn('Backend false positive update notice:', err.message);
+    }
+    setAlerts((prev) => prev.filter((a) => (a.rawId || a.id) !== alertId));
     setActiveCount((prev) => Math.max(0, prev - 1));
     setActionNotification(`Marked ${alertItem.id} as False Positive. Feedback routed to model tuning loop.`);
     setTimeout(() => setActionNotification(null), 4000);

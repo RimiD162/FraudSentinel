@@ -6,8 +6,9 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
 
-    # PostgreSQL Database Connection String loaded from environment / .env
-    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/fraudsentinel"
+    # Database Connection String loaded from environment / .env
+    # Defaults to local SQLite file for seamless local development, or PostgreSQL when set
+    DATABASE_URL: str = "sqlite:///./fraudsentinel.db"
 
     # SQLAlchemy echo mode (log all SQL statements) - useful for debugging
     DB_ECHO: bool = False

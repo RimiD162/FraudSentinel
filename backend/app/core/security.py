@@ -5,23 +5,39 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from app.core.config import settings
-
-# Password hashing context with bcrypt scheme
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a plain password against its bcrypt hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        password_bytes = plain_password.encode("utf-8")[:72]
+        hashed_bytes = hashed_password.encode("utf-8")
+        return bcrypt.checkpw(password_bytes, hashed_bytes)
+    except Exception:
+        return False
 
 
 def get_password_hash(password: str) -> str:
     """Hash a plain password using bcrypt."""
-    return pwd_context.hash(password)
+    password_bytes = password.encode("utf-8")[:72]
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password_bytes, salt).decode("utf-8")
+
+
+class _PwdContextCompat:
+    """Compatibility shim for libraries or tests expecting passlib's CryptContext."""
+    def verify(self, secret: str, hash: str) -> bool:
+        return verify_password(secret, hash)
+
+    def hash(self, secret: str) -> str:
+        return get_password_hash(secret)
+
+
+pwd_context = _PwdContextCompat()
 
 
 def create_access_token(

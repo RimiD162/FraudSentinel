@@ -43,7 +43,7 @@ def init_engine():
                 db_url,
                 e,
             )
-            sqlite_path = Path(__file__).resolve().parent.parent.parent / "fraudsentinel_local.db"
+            sqlite_path = Path(__file__).resolve().parent.parent.parent / "fraudsentinel.db"
             sqlite_url = f"sqlite:///{sqlite_path}"
             sqlite_engine = create_engine(
                 sqlite_url,

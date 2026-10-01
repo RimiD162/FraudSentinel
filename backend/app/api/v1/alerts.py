@@ -9,10 +9,15 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.auth import require_viewer
+from app.core.auth import require_analyst, require_viewer
 from app.core.database import get_db
 from app.models.user import User
-from app.schemas.alert import AlertListResponse, FraudAlertResponse
+from app.schemas.alert import (
+    AlertListResponse,
+    AlertUpdate,
+    BulkResolveResponse,
+    FraudAlertResponse,
+)
 from app.services.alert_service import AlertService, get_alert_service
 
 router = APIRouter()
@@ -54,6 +59,25 @@ def list_alerts(
     )
 
 
+@router.post(
+    "/bulk-resolve",
+    response_model=BulkResolveResponse,
+    summary="Bulk Resolve Fraud Alerts",
+    description="Bulk resolve all currently flagged / under review fraud alerts.",
+)
+def bulk_resolve_alerts(
+    severity: Optional[str] = Query(None, description="Optional severity filter"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst),
+    service: AlertService = Depends(get_alert_service),
+) -> BulkResolveResponse:
+    count = service.bulk_resolve(db=db, severity=severity)
+    return BulkResolveResponse(
+        resolved_count=count,
+        message=f"Successfully marked {count} alerts as resolved.",
+    )
+
+
 @router.get(
     "/{alert_id}",
     response_model=FraudAlertResponse,
@@ -73,3 +97,52 @@ def get_alert(
             detail=f"Fraud alert '{alert_id}' not found",
         )
     return alert
+
+
+@router.patch(
+    "/{alert_id}",
+    response_model=FraudAlertResponse,
+    summary="Update Fraud Alert Status",
+    description="Update the status or severity of a fraud alert.",
+)
+def update_alert(
+    payload: AlertUpdate,
+    alert_id: UUID = Path(..., description="Unique UUID of the fraud alert"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst),
+    service: AlertService = Depends(get_alert_service),
+) -> FraudAlertResponse:
+    updated = service.update_alert(
+        db=db,
+        alert_id=alert_id,
+        status=payload.status,
+        severity=payload.severity,
+        description=payload.description,
+    )
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Fraud alert '{alert_id}' not found",
+        )
+    return updated
+
+
+@router.post(
+    "/{alert_id}/resolve",
+    response_model=FraudAlertResponse,
+    summary="Resolve Fraud Alert",
+    description="Mark an individual fraud alert as cleared / resolved.",
+)
+def resolve_alert(
+    alert_id: UUID = Path(..., description="Unique UUID of the fraud alert"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analyst),
+    service: AlertService = Depends(get_alert_service),
+) -> FraudAlertResponse:
+    updated = service.resolve_alert(db=db, alert_id=alert_id)
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Fraud alert '{alert_id}' not found",
+        )
+    return updated

@@ -39,6 +39,30 @@ class UserResponse(BaseModel):
     created_at: datetime = Field(..., description="Timestamp of account creation")
 
 
+class UserCreate(BaseModel):
+    """Schema for creating or inviting a new user."""
+
+    email: str = Field(..., description="User email address")
+    password: Optional[str] = Field("Sentin3l#2026", description="Initial password")
+    full_name: str = Field(..., description="Full name")
+    role: str = Field("analyst", description="Role: admin, analyst, viewer")
+
+
+class UserUpdate(BaseModel):
+    """Schema for updating an existing user."""
+
+    full_name: Optional[str] = None
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class UserListResponse(BaseModel):
+    """List response for users."""
+
+    total: int
+    items: list[UserResponse]
+
+
 class TokenPayload(BaseModel):
     """Decoded JWT access token payload."""
 

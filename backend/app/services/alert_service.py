@@ -107,6 +107,46 @@ class AlertService:
             transaction=tx_resp,
         )
 
+    def update_alert(
+        self, db: Session, alert_id: UUID, status: Optional[str] = None, severity: Optional[str] = None, description: Optional[str] = None
+    ) -> Optional[FraudAlertResponse]:
+        """Update status or severity of an alert."""
+        alert = db.get(FraudAlert, alert_id)
+        if not alert:
+            return None
+
+        if status:
+            alert.status = status.lower()
+            if alert.status in ["cleared", "resolved"]:
+                alert.resolved_at = datetime.utcnow()
+        if severity:
+            alert.severity = severity.lower()
+        if description:
+            alert.description = description
+
+        db.commit()
+        db.refresh(alert)
+        return self.get_alert_by_id(db, alert_id)
+
+    def resolve_alert(self, db: Session, alert_id: UUID) -> Optional[FraudAlertResponse]:
+        """Mark an alert as cleared / resolved."""
+        return self.update_alert(db, alert_id, status="cleared")
+
+    def bulk_resolve(self, db: Session, severity: Optional[str] = None) -> int:
+        """Bulk resolve all active / flagged alerts."""
+        stmt = select(FraudAlert).where(FraudAlert.status.in_(["flagged", "under_review"]))
+        if severity and severity.lower() != "all":
+            stmt = stmt.where(FraudAlert.severity == severity.lower())
+
+        alerts = db.scalars(stmt).all()
+        now = datetime.utcnow()
+        for a in alerts:
+            a.status = "cleared"
+            a.resolved_at = now
+
+        db.commit()
+        return len(alerts)
+
 
 def get_alert_service() -> AlertService:
     return AlertService()

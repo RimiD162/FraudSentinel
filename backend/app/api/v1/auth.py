@@ -8,12 +8,20 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
-from app.core.auth import get_current_user, log_audit_event
+from app.core.auth import get_current_user, log_audit_event, require_admin
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.security import create_access_token, verify_password
+from app.core.security import create_access_token, get_password_hash, verify_password
+from app.models.role import Role
 from app.models.user import User
-from app.schemas.auth import LoginRequest, TokenResponse, UserResponse
+from app.schemas.auth import (
+    LoginRequest,
+    TokenResponse,
+    UserCreate,
+    UserListResponse,
+    UserResponse,
+    UserUpdate,
+)
 
 router = APIRouter()
 
@@ -118,3 +126,146 @@ def get_me(
         is_active=current_user.is_active,
         created_at=current_user.created_at,
     )
+
+
+@router.get(
+    "/users",
+    response_model=UserListResponse,
+    summary="List Team Users",
+    description="Lists all users in the system (Admin only).",
+)
+def list_users(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+) -> UserListResponse:
+    users = db.query(User).all()
+    items = []
+    for u in users:
+        role_name = u.role.name if u.role else "viewer"
+        items.append(
+            UserResponse(
+                id=u.id,
+                email=u.email,
+                full_name=u.full_name,
+                role=role_name,
+                is_active=u.is_active,
+                created_at=u.created_at,
+            )
+        )
+    return UserListResponse(total=len(items), items=items)
+
+
+@router.post(
+    "/users",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create or Invite User",
+    description="Creates a new user profile with assigned RBAC role (Admin only).",
+)
+def create_user(
+    payload: UserCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+) -> UserResponse:
+    email_clean = payload.email.strip().lower()
+    existing = db.query(User).filter(User.email.ilike(email_clean)).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"User with email '{email_clean}' already exists.",
+        )
+
+    role = db.query(Role).filter(Role.name.ilike(payload.role.strip().lower())).first()
+    if not role:
+        role = db.query(Role).filter(Role.name == "analyst").first()
+
+    new_user = User(
+        email=email_clean,
+        hashed_password=get_password_hash(payload.password or "Sentin3l#2026"),
+        full_name=payload.full_name,
+        role_id=role.id if role else None,
+        is_active=True,
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return UserResponse(
+        id=new_user.id,
+        email=new_user.email,
+        full_name=new_user.full_name,
+        role=role.name if role else "viewer",
+        is_active=new_user.is_active,
+        created_at=new_user.created_at,
+    )
+
+
+@router.patch(
+    "/users/{user_id}",
+    response_model=UserResponse,
+    summary="Update User",
+    description="Updates role, active status, or name of a user (Admin only).",
+)
+def update_user(
+    user_id: str,
+    payload: UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+) -> UserResponse:
+    import uuid
+    try:
+        u_uuid = uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid user UUID")
+
+    user = db.get(User, u_uuid)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if payload.full_name is not None:
+        user.full_name = payload.full_name
+    if payload.is_active is not None:
+        user.is_active = payload.is_active
+    if payload.role is not None:
+        role = db.query(Role).filter(Role.name.ilike(payload.role.strip().lower())).first()
+        if role:
+            user.role_id = role.id
+
+    db.commit()
+    db.refresh(user)
+
+    role_name = user.role.name if user.role else "viewer"
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        full_name=user.full_name,
+        role=role_name,
+        is_active=user.is_active,
+        created_at=user.created_at,
+    )
+
+
+@router.delete(
+    "/users/{user_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Deactivate or Remove User",
+    description="Deactivates a user (Admin only).",
+)
+def delete_user(
+    user_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    import uuid
+    try:
+        u_uuid = uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid user UUID")
+
+    user = db.get(User, u_uuid)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    user.is_active = False
+    db.commit()
+    return {"message": f"User {user.email} has been deactivated"}
