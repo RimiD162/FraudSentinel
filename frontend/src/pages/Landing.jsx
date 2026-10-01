@@ -10,11 +10,11 @@ import Footer from '../components/landing/Footer.jsx';
 
 /**
  * Landing Page Component (Route: `/`)
- * Assembles all SaaS marketing sections into a cohesive, responsive landing experience.
+ * Assembles all SaaS marketing sections in a luxury White & Gold design aesthetic.
  */
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-[#0B0E14] text-white flex flex-col selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-[#FAFAF8] text-[#1A1612] flex flex-col selection:bg-amber-400/30 selection:text-amber-950 font-sans">
       <NavBar />
       <main className="flex-1">
         <Hero />

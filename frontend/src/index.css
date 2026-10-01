@@ -3,39 +3,39 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
   margin: 0;
-  background-color: #0B0E14;
-  color: #FFFFFF;
+  background-color: #FFFFFF;
+  color: #1A1612;
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom smooth dark scrollbars */
+/* Custom smooth gold & light scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0B0E14;
+  background: #FAF8F5;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #222734;
+  background: #DFC78E;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #2E3547;
+  background: #C59A3F;
 }
 
-/* Ensure focus outline is clear for accessibility */
+/* Clear gold focus outline for accessibility */
 *:focus-visible {
-  outline: 2px solid #3B82F6;
+  outline: 2px solid #C59A3F;
   outline-offset: 2px;
 }

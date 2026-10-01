@@ -2,7 +2,7 @@ import React from 'react';
 
 /**
  * StatsBar Component
- * Trust & metrics bar reusing dashboard stat-card visual aesthetic.
+ * Trust & metrics bar in luxury White & Gold styling.
  */
 export default function StatsBar() {
   const stats = [
@@ -33,26 +33,26 @@ export default function StatsBar() {
   ];
 
   return (
-    <section className="py-10 border-y border-[#222734] bg-[#0E121A]/60">
+    <section className="py-8 border-y border-[#EBE3D0] bg-[#FAF8F2]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat, idx) => (
             <div
               key={idx}
-              className="bg-[#161A22] border border-[#222734] rounded-xl p-5 flex flex-col justify-between shadow-sm transition-transform hover:-translate-y-0.5 duration-150"
+              className="bg-white border border-[#E5DCBE] rounded-2xl p-6 flex flex-col justify-between shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-amber-400 group"
             >
-              <span className="text-xs sm:text-sm text-gray-400 font-medium tracking-wide">
+              <span className="text-xs sm:text-sm text-[#6B6454] font-semibold tracking-wide">
                 {stat.label}
               </span>
               <div className="mt-2 mb-1">
-                <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                <span className="text-2xl sm:text-3xl font-extrabold text-[#1A1612] tracking-tight group-hover:text-amber-800 transition-colors">
                   {stat.value}
                 </span>
               </div>
-              <div className="flex items-center text-xs font-semibold mt-1">
+              <div className="flex items-center text-xs font-bold mt-1">
                 <span
                   className={
-                    stat.isPositive ? 'text-emerald-400' : 'text-blue-400'
+                    stat.isPositive ? 'text-emerald-700' : 'text-amber-700'
                   }
                 >
                   {stat.subtext}
