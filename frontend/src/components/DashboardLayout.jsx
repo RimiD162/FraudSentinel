@@ -24,23 +24,16 @@ export default function DashboardLayout() {
           </span>
         );
       case 'analyst':
+      default:
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300/80 shadow-2xs">
             <Cpu className="w-3.5 h-3.5 text-amber-600" />
             Fraud Analyst
           </span>
         );
-      case 'viewer':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#FAF8F3] text-[#5C5648] border border-[#E5DCBE] shadow-2xs">
-            <Eye className="w-3.5 h-3.5 text-amber-600" />
-            Viewer (Read-Only)
-          </span>
-        );
-      default:
-        return null;
     }
   };
+
 
   const getApiStatusBadge = () => {
     if (apiStatus === 'online') {
@@ -116,7 +109,7 @@ export default function DashboardLayout() {
 
             {/* Sign Out Button */}
             <Link
-              to="/login"
+              to={role === 'admin' ? '/login/admin' : '/login/analyst'}
               onClick={() => logout()}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-amber-50 text-xs font-semibold text-[#5C5648] hover:text-amber-900 border border-[#E5DCBE] hover:border-amber-400 transition-colors shadow-2xs"
               title="Sign Out to Login Portal"

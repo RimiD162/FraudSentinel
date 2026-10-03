@@ -1,14 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { ROLE_PERMISSIONS, ROLES } from '../config/permissions.js';
-import { loginRole, login, getMe, getHealth, setAuthToken, clearAuthToken } from '../services/api.js';
+import { loginRole, login, registerUser, getMe, getHealth, setAuthToken, clearAuthToken } from '../services/api.js';
 
 const RoleContext = createContext(null);
 
 export const ROLE_CREDENTIALS = {
   admin: { email: 'admin@fraudsentinel.com', password: 'admin123', name: 'System Administrator' },
   analyst: { email: 'analyst@fraudsentinel.com', password: 'analyst123', name: 'Lead Fraud Analyst' },
-  viewer: { email: 'viewer@fraudsentinel.com', password: 'viewer123', name: 'Compliance Auditor' },
 };
+
 
 /**
  * RoleProvider Component
@@ -86,14 +86,16 @@ export function RoleProvider({ children }) {
     }
   }, []);
 
-  // Explicit register with email, password, full name
-  const registerWithCredentials = useCallback(async (email, password, fullName = '') => {
+  // Explicit register with email, password, full name, and role
+  const registerWithCredentials = useCallback(async (email, password, fullName = '', targetRole = 'analyst') => {
     setIsAuthenticating(true);
     setAuthError(null);
     try {
-      const res = await registerUser({ email, password, full_name: fullName, role: 'analyst' });
+      const normalizedRole = targetRole.toLowerCase() === 'admin' ? 'admin' : 'analyst';
+      const res = await registerUser({ email, password, full_name: fullName, role: normalizedRole });
       if (res?.access_token) {
-        setRoleState('analyst');
+        const assignedRole = (res.role || normalizedRole).toLowerCase();
+        setRoleState(assignedRole);
         setCurrentUser({
           id: res.user_id,
           email: res.email,
@@ -111,6 +113,7 @@ export function RoleProvider({ children }) {
       setIsAuthenticating(false);
     }
   }, []);
+
 
   // Explicit logout
   const logout = useCallback(() => {

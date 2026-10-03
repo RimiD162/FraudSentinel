@@ -7,6 +7,7 @@ import DashboardLayout from './components/DashboardLayout.jsx';
 // Pages
 import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
+import AdminLogin from './pages/AdminLogin.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import AnalyzeTransaction from './pages/AnalyzeTransaction.jsx';
 import Transactions from './pages/Transactions.jsx';
@@ -28,9 +29,20 @@ export default function App() {
           {/* Public Landing Page */}
           <Route path="/" element={<Landing />} />
 
-          {/* Dedicated Multi-Role Authentication Page */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/auth" element={<Login />} />
+          {/* Dedicated Fraud Analyst Authentication Page */}
+          <Route path="/login/analyst" element={<Login />} />
+          <Route path="/login/Analyst" element={<Login />} />
+          <Route path="/analyst/login" element={<Login />} />
+          <Route path="/analyst" element={<Navigate to="/login/analyst" replace />} />
+          <Route path="/login" element={<Navigate to="/login/analyst" replace />} />
+          <Route path="/auth" element={<Navigate to="/login/analyst" replace />} />
+
+          {/* Dedicated System Administrator Only Authentication Portal */}
+          <Route path="/login/admin" element={<AdminLogin />} />
+          <Route path="/login/Admin" element={<AdminLogin />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin" element={<Navigate to="/login/admin" replace />} />
+
 
           {/* Protected Dashboard Routes */}
           <Route path="/dashboard" element={<DashboardLayout />}>

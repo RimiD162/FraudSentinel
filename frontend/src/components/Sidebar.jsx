@@ -10,10 +10,8 @@ import {
   Users,
   Settings,
   Shield,
-  ArrowLeft,
 } from 'lucide-react';
 import { useRole } from '../context/RoleContext.jsx';
-import RoleSwitcher from './RoleSwitcher.jsx';
 
 /**
  * Navigation Items Registry
@@ -84,7 +82,7 @@ const NAV_ITEMS = [
  * Reads permission matrix to dynamically filter navigation items based on current role.
  */
 export default function Sidebar() {
-  const { getPermission, role } = useRole();
+  const { getPermission } = useRole();
 
   // Filter items dynamically using centralized permission table
   const visibleNavItems = NAV_ITEMS.filter(
@@ -169,34 +167,6 @@ export default function Sidebar() {
             })}
           </ul>
         </nav>
-      </div>
-
-      {/* Bottom Pinned Area */}
-      <div className="pt-3 border-t border-[#EAE2CE] flex flex-col gap-3">
-        {/* Role Switcher Demo Control */}
-        <div className="max-[900px]:hidden">
-          <RoleSwitcher />
-        </div>
-
-        {/* Compact Role Switcher Indicator for collapsed screen (<900px) */}
-        <div className="hidden max-[900px]:flex justify-center">
-          <div
-            className="w-8 h-8 rounded-full bg-amber-50 border border-amber-300 flex items-center justify-center text-xs font-bold text-amber-800 shadow-2xs"
-            title={`Active Role: ${role}`}
-          >
-            {role.charAt(0).toUpperCase()}
-          </div>
-        </div>
-
-        {/* Back to Landing Page Link */}
-        <Link
-          to="/"
-          className="text-xs font-semibold text-[#5C5648] hover:text-amber-900 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-white hover:bg-amber-50 border border-[#E5DCBE] hover:border-amber-400 transition-colors shadow-2xs"
-          title="Back to Landing Page"
-        >
-          <ArrowLeft className="w-3.5 h-3.5 flex-shrink-0 text-amber-600" />
-          <span className="max-[900px]:hidden">Exit to Landing</span>
-        </Link>
       </div>
     </aside>
   );

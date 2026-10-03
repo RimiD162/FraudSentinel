@@ -5,9 +5,10 @@ import { Settings as SettingsIcon, Save, Key, Sliders, Webhook, ShieldCheck, Che
 /**
  * Settings Page Component
  * System configuration, ML sensitivity thresholds, webhook integrations, and API keys.
- * Permissions: Admin (Full), Fraud Analyst (Hidden/View-Only), Viewer (Hidden/View-Only)
+ * Permissions: Admin (Full Access), Fraud Analyst (Hidden/Restricted)
  * Luxury White & Gold theme matching the Landing and Auth design system.
  */
+
 export default function Settings() {
   const isViewOnly = useViewOnly();
 

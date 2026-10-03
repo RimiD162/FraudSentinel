@@ -129,11 +129,14 @@ def register(
             detail=f"An account with email '{email_clean}' already exists.",
         )
 
-    role = db.query(Role).filter(Role.name == "analyst").first()
+    target_role_name = (payload.role or "analyst").lower().strip()
+    role = db.query(Role).filter(Role.name == target_role_name).first()
+    if not role:
+        role = db.query(Role).filter(Role.name == "analyst").first()
     if not role:
         role = db.query(Role).first()
 
-    raw_password = payload.password or "analyst123"
+    raw_password = payload.password or "admin123"
     new_user = User(
         email=email_clean,
         hashed_password=get_password_hash(raw_password),
@@ -141,6 +144,7 @@ def register(
         role_id=role.id if role else None,
         is_active=True,
     )
+
     db.add(new_user)
     db.commit()
     db.refresh(new_user)

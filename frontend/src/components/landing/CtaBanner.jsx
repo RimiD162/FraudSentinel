@@ -30,7 +30,7 @@ export default function CtaBanner() {
 
             <div className="pt-3">
               <Link
-                to="/login"
+                to="/login/analyst"
                 className="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-base transition-all shadow-xl shadow-amber-500/30 hover:shadow-2xl hover:shadow-amber-500/40 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-amber-500"
               >
                 Launch Dashboard Demo

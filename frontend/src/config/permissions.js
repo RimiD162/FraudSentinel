@@ -28,16 +28,6 @@ export const ROLE_PERMISSIONS = {
     userManagement: 'hidden',
     settings: 'hidden',
   },
-  viewer: {
-    dashboard: 'full',
-    analyzeTransaction: 'hidden',
-    transactions: 'view',
-    fraudAlerts: 'view',
-    analytics: 'view',
-    reports: 'view',
-    userManagement: 'hidden',
-    settings: 'hidden',
-  },
 };
 
 export const ROLES = [
@@ -45,18 +35,13 @@ export const ROLES = [
     id: 'admin',
     label: 'Admin',
     badge: 'Full Access',
-    description: 'System administrator with full read, write, and user management capabilities.',
+    description: 'System administrator with root control, user provisioning, and engine settings.',
   },
   {
     id: 'analyst',
     label: 'Fraud Analyst',
     badge: 'Analyst Access',
-    description: 'Investigator with full access to transactions, alerts, and analysis modules.',
-  },
-  {
-    id: 'viewer',
-    label: 'Viewer',
-    badge: 'Read Only',
-    description: 'Auditor or stakeholder with read-only access to monitoring and reporting views.',
+    description: 'Investigator with full access to transactions, alerts, and inference analysis modules.',
   },
 ];
+

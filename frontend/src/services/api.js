@@ -11,8 +11,8 @@ const API_BASE_URL =
 export const ROLE_CREDENTIALS = {
   admin: { email: 'admin@fraudsentinel.com', password: 'admin123' },
   analyst: { email: 'analyst@fraudsentinel.com', password: 'analyst123' },
-  viewer: { email: 'viewer@fraudsentinel.com', password: 'viewer123' },
 };
+
 
 // In-memory / storage token state
 let currentToken = localStorage.getItem('fraudsentinel_token') || localStorage.getItem('fraudsentinel_jwt_token') || null;

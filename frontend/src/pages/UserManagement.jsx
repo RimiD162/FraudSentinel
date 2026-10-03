@@ -47,11 +47,11 @@ export default function UserManagement() {
     },
     {
       id: 'usr_3',
-      name: 'Auditor & Compliance Viewer',
-      email: 'viewer@fraudsentinel.com',
-      role: 'Viewer',
+      name: 'ML Operations Analyst',
+      email: 'ml-ops@fraudsentinel.com',
+      role: 'Fraud Analyst',
       status: 'Active',
-      lastActive: '1 hour ago',
+      lastActive: '25 mins ago',
       avatarColor: 'from-emerald-500 to-teal-600',
     },
   ];
@@ -78,9 +78,7 @@ export default function UserManagement() {
           const roleDisplay =
             roleNormalized === 'admin'
               ? 'Admin'
-              : roleNormalized === 'analyst'
-              ? 'Fraud Analyst'
-              : 'Viewer';
+              : 'Fraud Analyst';
 
           return {
             id: u.id,
@@ -157,7 +155,6 @@ export default function UserManagement() {
 
   const adminCount = users.filter((u) => u.role === 'Admin').length;
   const analystCount = users.filter((u) => u.role === 'Fraud Analyst').length;
-  const viewerCount = users.filter((u) => u.role === 'Viewer').length;
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -220,7 +217,7 @@ export default function UserManagement() {
           <div>
             <div className="text-xs font-semibold text-[#8C8270] uppercase tracking-wider">Total Seats</div>
             <div className="text-2xl font-bold text-[#1A1612] mt-1">{users.length}</div>
-            <div className="text-[11px] text-[#5C5648] mt-0.5">Active enterprise licenses</div>
+            <div className="text-[11px] text-[#5C5648] mt-0.5">Active enterprise accounts</div>
           </div>
           <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600">
             <Users className="w-6 h-6" />
@@ -231,7 +228,7 @@ export default function UserManagement() {
           <div>
             <div className="text-xs font-semibold text-[#8C8270] uppercase tracking-wider">Fraud Analysts</div>
             <div className="text-2xl font-bold text-[#1A1612] mt-1">{analystCount}</div>
-            <div className="text-[11px] text-blue-600 mt-0.5">Triage & KR&R Symbolic Engine</div>
+            <div className="text-[11px] text-blue-600 mt-0.5">Triage & Investigation Operators</div>
           </div>
           <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200/60 flex items-center justify-center text-blue-600">
             <ShieldCheck className="w-6 h-6" />
@@ -240,11 +237,11 @@ export default function UserManagement() {
 
         <div className="bg-white border border-[#E5DCBE] rounded-2xl p-5 shadow-xl shadow-amber-500/5 flex items-center justify-between">
           <div>
-            <div className="text-xs font-semibold text-[#8C8270] uppercase tracking-wider">Admins & Auditors</div>
-            <div className="text-2xl font-bold text-[#1A1612] mt-1">{adminCount + viewerCount}</div>
-            <div className="text-[11px] text-emerald-600 mt-0.5">{adminCount} Admins &bull; {viewerCount} Viewers</div>
+            <div className="text-xs font-semibold text-[#8C8270] uppercase tracking-wider">System Administrators</div>
+            <div className="text-2xl font-bold text-[#1A1612] mt-1">{adminCount}</div>
+            <div className="text-[11px] text-amber-600 mt-0.5">Root privilege & engine control</div>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200/60 flex items-center justify-center text-emerald-600">
+          <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600">
             <KeyRound className="w-6 h-6" />
           </div>
         </div>
@@ -303,9 +300,7 @@ export default function UserManagement() {
                         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
                           user.role === 'Admin'
                             ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                            : user.role === 'Fraud Analyst'
-                            ? 'bg-blue-50 text-blue-800 border border-blue-200'
-                            : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                            : 'bg-blue-50 text-blue-800 border border-blue-200'
                         }`}
                       >
                         <Shield className="w-3.5 h-3.5" />
@@ -421,7 +416,6 @@ export default function UserManagement() {
                 >
                   <option value="analyst">Fraud Analyst (Alerts, ML Inspection & Analytics)</option>
                   <option value="admin">Administrator (Full Access & User Management)</option>
-                  <option value="viewer">Auditor / Viewer (Read-only)</option>
                 </select>
               </div>
 
@@ -449,4 +443,5 @@ export default function UserManagement() {
     </div>
   );
 }
+
 

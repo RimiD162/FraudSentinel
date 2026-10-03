@@ -68,13 +68,29 @@ export default function Footer() {
             <p className="text-sm text-[#5C5648] max-w-sm leading-relaxed font-normal">
               Intelligent, low-latency transaction monitoring and ML fraud scoring platform designed for modern fintechs and digital commerce.
             </p>
-            <div className="pt-2">
+            <div className="pt-2 flex flex-wrap items-center gap-2.5">
               <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-[#E5DCBE] text-xs font-mono text-[#4A4438] shadow-sm">
                 <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                 PCI-DSS Level 1 Certified
               </span>
+              <Link
+                to="/login/analyst"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-amber-50 border border-[#E5DCBE] hover:border-amber-400 text-xs font-semibold text-[#5C5648] hover:text-amber-900 transition-colors shadow-2xs"
+                title="Fraud Analyst Portal"
+              >
+                <span>Analyst Portal →</span>
+              </Link>
+              <Link
+                to="/login/admin"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-300 text-xs font-semibold text-amber-900 transition-colors shadow-2xs"
+                title="System Administrator Console"
+              >
+                <span>Admin Portal →</span>
+              </Link>
             </div>
           </div>
+
+
 
           {/* Nav Categories */}
           {linkGroups.map((group) => (
