@@ -23,21 +23,30 @@ export default function StatCard({ label, value, delta, isPositive }) {
       </div>
 
       <div className="relative z-10 flex items-center justify-between pt-2 border-t border-[#F2EBD9] mt-2">
-        <div
-          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
-            isPositive
-              ? 'text-emerald-800 bg-emerald-50 border border-emerald-200'
-              : 'text-rose-800 bg-rose-50 border border-rose-200'
-          }`}
-        >
-          {isPositive ? (
-            <TrendingUp className="w-3 h-3 text-emerald-600" />
-          ) : (
-            <TrendingDown className="w-3 h-3 text-rose-600" />
-          )}
-          <span>{delta}</span>
-        </div>
-        <span className="text-[11px] font-medium text-[#8C8270]">vs previous period</span>
+        {delta ? (
+          <>
+            <div
+              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                isPositive
+                  ? 'text-emerald-800 bg-emerald-50 border border-emerald-200'
+                  : 'text-rose-800 bg-rose-50 border border-rose-200'
+              }`}
+            >
+              {isPositive ? (
+                <TrendingUp className="w-3 h-3 text-emerald-600" />
+              ) : (
+                <TrendingDown className="w-3 h-3 text-rose-600" />
+              )}
+              <span>{delta}</span>
+            </div>
+            <span className="text-[11px] font-medium text-[#8C8270]">vs previous period</span>
+          </>
+        ) : (
+          <>
+            <span className="text-xs font-medium text-[#8C8270]">No recent changes</span>
+            <span className="text-[11px] font-medium text-[#B8AE96]">Real-time Sync</span>
+          </>
+        )}
       </div>
     </div>
   );

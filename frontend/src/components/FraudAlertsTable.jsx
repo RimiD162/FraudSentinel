@@ -57,30 +57,44 @@ export default function FraudAlertsTable({ alerts }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#F2EBD9] text-sm font-medium">
-            {alerts.map((row) => (
-              <tr
-                key={row.id}
-                className="hover:bg-[#FDFBF7] transition-colors duration-150"
-              >
-                <td className="py-3.5 px-6 font-mono text-xs font-bold text-amber-900">
-                  <span className="bg-amber-50 px-2 py-0.5 rounded border border-amber-200/80">
-                    {row.id}
-                  </span>
-                </td>
-                <td className="py-3.5 px-6 font-bold text-[#1A1612]">
-                  {row.amount}
-                </td>
-                <td className="py-3.5 px-6 text-[#5C5648]">
-                  {row.user}
-                </td>
-                <td className="py-3.5 px-6 text-[#8C8270] text-xs">
-                  {row.timestamp}
-                </td>
-                <td className="py-3.5 px-6 text-right sm:text-left">
-                  <StatusBadge status={row.status} />
+            {alerts && alerts.length > 0 ? (
+              alerts.map((row) => (
+                <tr
+                  key={row.id}
+                  className="hover:bg-[#FDFBF7] transition-colors duration-150"
+                >
+                  <td className="py-3.5 px-6 font-mono text-xs font-bold text-amber-900">
+                    <span className="bg-amber-50 px-2 py-0.5 rounded border border-amber-200/80">
+                      {row.id}
+                    </span>
+                  </td>
+                  <td className="py-3.5 px-6 font-bold text-[#1A1612]">
+                    {row.amount}
+                  </td>
+                  <td className="py-3.5 px-6 text-[#5C5648]">
+                    {row.user}
+                  </td>
+                  <td className="py-3.5 px-6 text-[#8C8270] text-xs">
+                    {row.timestamp}
+                  </td>
+                  <td className="py-3.5 px-6 text-right sm:text-left">
+                    <StatusBadge status={row.status} />
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="5" className="py-12 text-center text-[#8C8270]">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200/70 flex items-center justify-center text-amber-600">
+                      <Bell className="w-5 h-5 text-amber-600/60" />
+                    </div>
+                    <span className="text-sm font-bold text-[#4A4438]">No fraud alerts triggered</span>
+                    <span className="text-xs text-[#8C8270]">All transactions have passed security thresholds.</span>
+                  </div>
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

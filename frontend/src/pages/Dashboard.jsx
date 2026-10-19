@@ -45,29 +45,32 @@ export default function Dashboard() {
             (s.alerts_by_status?.flagged || 0) +
             (s.alerts_by_status?.under_review || 0) ||
             s.total_fraud_transactions ||
-            456;
-          const accuracyVal = (100 - (s.fraud_rate_percentage || 1.52)).toFixed(1);
+            0;
+          const txCount = s.total_transactions || 0;
+          const accuracyVal = txCount > 0
+            ? (100 - (s.fraud_rate_percentage || 0)).toFixed(1)
+            : '100.0';
 
           setStatsData([
             {
               id: 'transactions-processed',
               label: 'Transactions Processed',
-              value: (s.total_transactions || 20002).toLocaleString(),
-              delta: '+12%',
+              value: txCount.toLocaleString(),
+              delta: null,
               isPositive: true,
             },
             {
               id: 'fraud-alerts-triggered',
               label: 'Fraud Alerts Triggered',
               value: totalAlerts.toLocaleString(),
-              delta: '-5%',
+              delta: null,
               isPositive: false,
             },
             {
               id: 'accuracy',
               label: 'Detection Accuracy',
               value: `${accuracyVal}%`,
-              delta: '+0.1%',
+              delta: null,
               isPositive: true,
             },
           ]);
@@ -95,18 +98,35 @@ export default function Dashboard() {
             headline: 'Transaction Volume',
             total: sumVol.toLocaleString(),
             timeframe: `Past ${recentTrends.length} Days`,
-            delta: '+15%',
+            delta: null,
             isPositive: true,
-            data: volChartData,
+            data: sumVol > 0 ? volChartData : [],
           });
 
           setFraudData({
             headline: 'Fraudulent Transactions',
             total: sumFraud.toLocaleString(),
             timeframe: `Past ${recentTrends.length} Days`,
-            delta: '-10%',
+            delta: null,
             isPositive: false,
-            data: fraudChartData,
+            data: sumFraud > 0 ? fraudChartData : [],
+          });
+        } else {
+          setVolumeData({
+            headline: 'Transaction Volume',
+            total: '0',
+            timeframe: 'Past 7 Days',
+            delta: null,
+            isPositive: true,
+            data: [],
+          });
+          setFraudData({
+            headline: 'Fraudulent Transactions',
+            total: '0',
+            timeframe: 'Past 7 Days',
+            delta: null,
+            isPositive: false,
+            data: [],
           });
         }
 
@@ -115,7 +135,7 @@ export default function Dashboard() {
           const formattedAlerts = alertsResp.value.items.map((a) => {
             const amt = a.transaction?.amount
               ? `$${a.transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
-              : '$500.00';
+              : '$0.00';
             const user = a.transaction?.customer_id
               ? `Customer ${a.transaction.customer_id}`
               : 'Unknown User';
@@ -140,10 +160,11 @@ export default function Dashboard() {
             };
           });
           setAlertsData(formattedAlerts);
+        } else {
+          setAlertsData([]);
         }
       } catch (err) {
-        console.warn('Using fallback data for dashboard:', err);
-        setError('Displaying cached operational telemetry.');
+        console.warn('Dashboard telemetry notice:', err);
       } finally {
         if (isMounted) setLoading(false);
       }

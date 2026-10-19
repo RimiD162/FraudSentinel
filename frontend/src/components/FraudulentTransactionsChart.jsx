@@ -47,50 +47,60 @@ export default function FraudulentTransactionsChart({ fraudData }) {
 
         <div className="flex items-center gap-2 text-xs mt-1">
           <span className="text-[#8C8270] font-medium">{timeframe}</span>
-          <span
-            className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold ${
-              isPositive
-                ? 'text-emerald-800 bg-emerald-50 border border-emerald-200'
-                : 'text-rose-800 bg-rose-50 border border-rose-200'
-            }`}
-          >
-            {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-            {delta}
-          </span>
+          {delta && (
+            <span
+              className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                isPositive
+                  ? 'text-emerald-800 bg-emerald-50 border border-emerald-200'
+                  : 'text-rose-800 bg-rose-50 border border-rose-200'
+              }`}
+            >
+              {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+              {delta}
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Bar Chart with warm amber bars & rounded tops */}
-      <div className="w-full h-48 mt-4">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={data}
-            margin={{ top: 10, right: 10, left: 10, bottom: 5 }}
-            barSize={24}
-          >
-            <defs>
-              <linearGradient id="goldBarGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#D97706" />
-                <stop offset="100%" stopColor="#F59E0B" />
-              </linearGradient>
-            </defs>
-            <XAxis
-              dataKey="time"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: '#8C8270', fontSize: 11, fontWeight: 500 }}
-              dy={6}
-            />
-            <YAxis hide domain={[0, 'dataMax + 2']} />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: '#FBF8F0', opacity: 0.6 }} />
-            <Bar
-              dataKey="count"
-              fill="url(#goldBarGradient)"
-              radius={[6, 6, 0, 0]}
-              isAnimationActive={false}
-            />
-          </BarChart>
-        </ResponsiveContainer>
+      {/* Bar Chart or Clean Empty State */}
+      <div className="w-full h-48 mt-4 flex items-center justify-center">
+        {data && data.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={data}
+              margin={{ top: 10, right: 10, left: 10, bottom: 5 }}
+              barSize={24}
+            >
+              <defs>
+                <linearGradient id="goldBarGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#D97706" />
+                  <stop offset="100%" stopColor="#F59E0B" />
+                </linearGradient>
+              </defs>
+              <XAxis
+                dataKey="time"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#8C8270', fontSize: 11, fontWeight: 500 }}
+                dy={6}
+              />
+              <YAxis hide domain={[0, 'dataMax + 2']} />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: '#FBF8F0', opacity: 0.6 }} />
+              <Bar
+                dataKey="count"
+                fill="url(#goldBarGradient)"
+                radius={[6, 6, 0, 0]}
+                isAnimationActive={false}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex flex-col items-center justify-center text-center p-6 border border-dashed border-[#E5DCBE] rounded-2xl w-full h-full bg-[#FAF8F2]/60">
+            <ShieldAlert className="w-8 h-8 text-amber-500/40 mb-2" />
+            <p className="text-xs font-bold text-[#4A4438]">No fraudulent activity detected</p>
+            <p className="text-[11px] text-[#8C8270] mt-0.5">Suspicious transactions flagged by ML inference will be mapped here.</p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -47,53 +47,63 @@ export default function TransactionVolumeChart({ volumeData }) {
 
         <div className="flex items-center gap-2 text-xs mt-1">
           <span className="text-[#8C8270] font-medium">{timeframe}</span>
-          <span
-            className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold ${
-              isPositive
-                ? 'text-emerald-800 bg-emerald-50 border border-emerald-200'
-                : 'text-rose-800 bg-rose-50 border border-rose-200'
-            }`}
-          >
-            {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-            {delta}
-          </span>
+          {delta && (
+            <span
+              className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                isPositive
+                  ? 'text-emerald-800 bg-emerald-50 border border-emerald-200'
+                  : 'text-rose-800 bg-rose-50 border border-rose-200'
+              }`}
+            >
+              {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+              {delta}
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Area Chart with Warm Gold Gradient */}
-      <div className="w-full h-48 mt-4">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart
-            data={data}
-            margin={{ top: 10, right: 10, left: 10, bottom: 5 }}
-          >
-            <defs>
-              <linearGradient id="goldVolumeGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#D97706" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="#D97706" stopOpacity={0.0} />
-              </linearGradient>
-            </defs>
-            <XAxis
-              dataKey="time"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: '#8C8270', fontSize: 11, fontWeight: 500 }}
-              dy={6}
-            />
-            <YAxis hide domain={['dataMin - 200', 'dataMax + 200']} />
-            <Tooltip content={<CustomTooltip />} />
-            <Area
-              type="monotone"
-              dataKey="value"
-              stroke="#D97706"
-              strokeWidth={2.5}
-              fillOpacity={1}
-              fill="url(#goldVolumeGradient)"
-              dot={false}
-              activeDot={{ r: 5, fill: '#D97706', stroke: '#FFFFFF', strokeWidth: 2 }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+      {/* Area Chart or Clean Empty State */}
+      <div className="w-full h-48 mt-4 flex items-center justify-center">
+        {data && data.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart
+              data={data}
+              margin={{ top: 10, right: 10, left: 10, bottom: 5 }}
+            >
+              <defs>
+                <linearGradient id="goldVolumeGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#D97706" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#D97706" stopOpacity={0.0} />
+                </linearGradient>
+              </defs>
+              <XAxis
+                dataKey="time"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#8C8270', fontSize: 11, fontWeight: 500 }}
+                dy={6}
+              />
+              <YAxis hide domain={['dataMin - 200', 'dataMax + 200']} />
+              <Tooltip content={<CustomTooltip />} />
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke="#D97706"
+                strokeWidth={2.5}
+                fillOpacity={1}
+                fill="url(#goldVolumeGradient)"
+                dot={false}
+                activeDot={{ r: 5, fill: '#D97706', stroke: '#FFFFFF', strokeWidth: 2 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex flex-col items-center justify-center text-center p-6 border border-dashed border-[#E5DCBE] rounded-2xl w-full h-full bg-[#FAF8F2]/60">
+            <Activity className="w-8 h-8 text-amber-500/40 mb-2" />
+            <p className="text-xs font-bold text-[#4A4438]">No transaction volume recorded</p>
+            <p className="text-[11px] text-[#8C8270] mt-0.5">Transactions will appear here in real-time as they are processed.</p>
+          </div>
+        )}
       </div>
     </div>
   );

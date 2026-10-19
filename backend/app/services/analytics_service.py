@@ -90,15 +90,15 @@ class AnalyticsService:
             dev_map = {str(row[0] or "unknown"): row[1] for row in dev_rows}
 
         else:
-            # Fallback to 20K dataset metadata
-            tx_count = 20000
-            fraud_count = 303
-            total_amt = 3012480.50
-            fraud_amt = 46238.40
-            sev_map = {"critical": 85, "high": 140, "medium": 78, "low": 0}
-            stat_map = {"flagged": 210, "under_review": 50, "cleared": 18, "confirmed": 25}
-            type_map = {"payment": 7800, "transfer": 5400, "withdrawal": 4200, "deposit": 2600}
-            dev_map = {"mobile": 8500, "desktop": 6200, "POS": 3800, "ATM": 1500}
+            # Clean zero state when no transactions exist
+            tx_count = 0
+            fraud_count = 0
+            total_amt = 0.0
+            fraud_amt = 0.0
+            sev_map = {}
+            stat_map = {}
+            type_map = {}
+            dev_map = {}
 
         fraud_rate = (fraud_count / tx_count * 100.0) if tx_count > 0 else 0.0
 
@@ -130,7 +130,8 @@ class AnalyticsService:
         """Compute time-series trends."""
         trend_items: List[DailyTrendItem] = []
 
-        if DAILY_AGG_CSV.exists():
+        tx_count = db.scalar(select(func.count(Transaction.id))) or 0
+        if tx_count > 0 and DAILY_AGG_CSV.exists():
             df_agg = pd.read_csv(DAILY_AGG_CSV)
             for _, row in df_agg.iterrows():
                 date_str = str(row.get("date", row.get("transaction_time", "")))
@@ -141,21 +142,6 @@ class AnalyticsService:
                         fraud_count=int(row.get("fraud_count", 0)),
                         fraud_amount=round(float(row.get("fraud_amount", 0.0)), 2),
                         fraud_rate=round(float(row.get("fraud_rate", 0.0)), 4),
-                    )
-                )
-
-        if not trend_items:
-            # Synthetic fallback dates
-            start = datetime(2025, 1, 1)
-            for d in range(30):
-                dt = start + pd.Timedelta(days=d)
-                trend_items.append(
-                    DailyTrendItem(
-                        date=dt.strftime("%Y-%m-%d"),
-                        total_transactions=667,
-                        fraud_count=10,
-                        fraud_amount=1540.0,
-                        fraud_rate=0.015,
                     )
                 )
 

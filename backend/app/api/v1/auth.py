@@ -8,7 +8,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
-from app.core.auth import get_current_user, log_audit_event, require_admin
+from app.core.auth import get_current_user, log_audit_event, require_admin, require_viewer
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import create_access_token, get_password_hash, verify_password
@@ -208,7 +208,7 @@ def get_me(
 )
 def list_users(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_viewer),
 ) -> UserListResponse:
     users = db.query(User).all()
     items = []

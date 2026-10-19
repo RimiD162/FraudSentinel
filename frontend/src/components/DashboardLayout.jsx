@@ -3,68 +3,16 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar.jsx';
 import RoleSwitcher from './RoleSwitcher.jsx';
 import { useRole } from '../context/RoleContext.jsx';
-import { ShieldCheck, Eye, Home, LogOut, Cpu } from 'lucide-react';
+import { Home, LogOut } from 'lucide-react';
 
 /**
  * DashboardLayout Component
  * Luxury White & Gold two-column root layout with fixed sidebar,
- * top navigation bar with live telemetry badges, and scrollable main container.
+ * top navigation bar, and scrollable main container.
  */
 export default function DashboardLayout() {
-  const { role, currentUser, apiStatus, logout } = useRole();
+  const { role, logout } = useRole();
   const location = useLocation();
-
-  const getRoleBadge = () => {
-    switch (role) {
-      case 'admin':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300/80 shadow-2xs">
-            <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
-            Admin Console
-          </span>
-        );
-      case 'analyst':
-      default:
-        return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300/80 shadow-2xs">
-            <Cpu className="w-3.5 h-3.5 text-amber-600" />
-            Fraud Analyst
-          </span>
-        );
-    }
-  };
-
-
-  const getApiStatusBadge = () => {
-    if (apiStatus === 'online') {
-      return (
-        <span
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono shadow-2xs"
-          title="Backend FastAPI connected"
-        >
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          API Live
-        </span>
-      );
-    }
-    if (apiStatus === 'connecting') {
-      return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 font-mono shadow-2xs">
-          <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
-          Connecting...
-        </span>
-      );
-    }
-    return (
-      <span
-        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-800 border border-rose-200 font-mono shadow-2xs"
-        title="Backend FastAPI offline"
-      >
-        <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-        API Offline
-      </span>
-    );
-  };
 
   const pathLabel = location.pathname.replace('/dashboard/', '').replace('/dashboard', 'Overview') || 'Overview';
 
@@ -92,16 +40,6 @@ export default function DashboardLayout() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Live API status badge */}
-            <div className="hidden sm:block">
-              {getApiStatusBadge()}
-            </div>
-
-            {/* Active role pill badge */}
-            <div className="hidden sm:block">
-              {getRoleBadge()}
-            </div>
-
             {/* Mobile / Compact Role Switcher */}
             <div className="min-[901px]:hidden w-36">
               <RoleSwitcher compact />

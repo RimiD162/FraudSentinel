@@ -19,19 +19,6 @@ export default function Analytics() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fallbackPatterns = [
-    { name: 'Card Not Present (CNP)', percentage: 54, color: 'bg-gradient-to-r from-amber-500 to-yellow-600', count: '1,240 cases' },
-    { name: 'Account Takeover (ATO)', percentage: 26, color: 'bg-gradient-to-r from-amber-600 to-amber-700', count: '598 cases' },
-    { name: 'Synthetic Identity Fraud', percentage: 14, color: 'bg-gradient-to-r from-yellow-500 to-amber-600', count: '322 cases' },
-    { name: 'Friendly / Chargeback Abuse', percentage: 6, color: 'bg-gradient-to-r from-emerald-500 to-emerald-600', count: '138 cases' },
-  ];
-
-  const fallbackGeos = [
-    { name: 'Lagos, Nigeria', risk: '28.4% Flagged', reason: 'Tor/VPN cluster proxy', color: 'text-rose-700' },
-    { name: 'Bucharest, Romania', risk: '19.1% Flagged', reason: 'Card enumeration attempts', color: 'text-amber-800' },
-    { name: 'São Paulo, Brazil', risk: '14.6% Flagged', reason: 'Credential stuffing signals', color: 'text-amber-800' },
-  ];
-
   const fetchAnalytics = async () => {
     setIsLoading(true);
     setError(null);
@@ -46,20 +33,25 @@ export default function Analytics() {
         setSummaryData(summaryRes.value);
       } else {
         setSummaryData({
-          prevented_loss: 842500,
-          fraud_rate_pct: 0.08,
-          auto_mitigation_rate_pct: 94.3,
-          total_transactions: 20000,
-          fraud_amount: 142050,
+          prevented_loss: 0,
+          fraud_rate_percentage: 0,
+          auto_mitigation_rate_pct: 100,
+          total_transactions: 0,
+          total_fraud_transactions: 0,
+          total_fraud_amount: 0,
         });
       }
 
       if (trendsRes.status === 'fulfilled' && trendsRes.value) {
         setTrendsData(trendsRes.value);
+      } else {
+        setTrendsData(null);
       }
 
       if (forecastRes.status === 'fulfilled' && forecastRes.value) {
         setForecastOverview(forecastRes.value);
+      } else {
+        setForecastOverview(null);
       }
     } catch (err) {
       console.warn('API error in analytics:', err);
@@ -74,22 +66,26 @@ export default function Analytics() {
   }, [timeframe]);
 
   // Derived metrics
-  const preventedLossFormatted = summaryData?.prevented_loss
-    ? `$${Number(summaryData.prevented_loss).toLocaleString()}`
-    : '$842,500';
+  const preventedLossFormatted = summaryData?.total_fraud_amount !== undefined
+    ? `$${Number(summaryData.total_fraud_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    : summaryData?.prevented_loss !== undefined
+    ? `$${Number(summaryData.prevented_loss).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    : '$0.00';
 
-  const fraudRatioFormatted = summaryData?.fraud_rate_pct !== undefined
+  const fraudRatioFormatted = summaryData?.fraud_rate_percentage !== undefined
+    ? `${Number(summaryData.fraud_rate_percentage).toFixed(2)}%`
+    : summaryData?.fraud_rate_pct !== undefined
     ? `${Number(summaryData.fraud_rate_pct).toFixed(2)}%`
-    : summaryData?.fraud_rate !== undefined
-    ? `${(Number(summaryData.fraud_rate) * 100).toFixed(2)}%`
-    : '0.08%';
+    : '0.00%';
 
   const autoMitigationFormatted = summaryData?.auto_mitigation_rate_pct !== undefined
     ? `${Number(summaryData.auto_mitigation_rate_pct).toFixed(1)}%`
-    : '94.3%';
+    : summaryData?.total_transactions > 0
+    ? `${(100 - (summaryData.fraud_rate_percentage || 0)).toFixed(1)}%`
+    : '100.0%';
 
-  const fraudPatterns = trendsData?.fraud_vectors || fallbackPatterns;
-  const highRiskGeos = trendsData?.geo_distribution || fallbackGeos;
+  const fraudPatterns = trendsData?.fraud_vectors || [];
+  const highRiskGeos = trendsData?.geo_distribution || [];
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -177,7 +173,7 @@ export default function Analytics() {
           </div>
           <div className="flex items-center gap-1 text-xs text-emerald-800 font-bold mt-2 pt-2 border-t border-[#F2EBD9]">
             <ArrowUpRight className="w-3.5 h-3.5 text-emerald-600" />
-            +18.2% vs baseline loss exposure
+            {summaryData?.total_transactions > 0 ? '+0.0% vs baseline loss exposure' : 'Active monitoring • Zero exposure'}
           </div>
         </div>
 
@@ -203,7 +199,7 @@ export default function Analytics() {
       </div>
 
       {/* Forecasting Telemetry Highlight */}
-      {forecastOverview && (
+      {forecastOverview && forecastOverview.total_historical_days > 0 && (
         <div className="bg-gradient-to-r from-white via-[#FCFAF5] to-amber-50/50 border border-amber-200/80 rounded-2xl sm:rounded-3xl p-6 shadow-xl shadow-amber-500/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-700 shadow-2xs">
@@ -217,7 +213,7 @@ export default function Analytics() {
                 </span>
               </div>
               <p className="text-xs text-[#5C5648] mt-0.5">
-                Evaluated daily fraud velocity with MAE {forecastOverview.metrics?.mae?.toFixed(3) || '0.042'} across projections.
+                Evaluated daily fraud velocity across active model horizons.
               </p>
             </div>
           </div>
@@ -244,29 +240,37 @@ export default function Analytics() {
               </p>
             </div>
             <span className="text-xs font-mono font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-              {trendsData?.total_flagged || '2,298'} Total
+              {summaryData?.total_fraud_transactions || trendsData?.total_flagged || 0} Total
             </span>
           </div>
 
-          <div className="space-y-4">
-            {fraudPatterns.map((pattern) => (
-              <div key={pattern.name} className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs font-bold">
-                  <span className="text-[#1A1612]">{pattern.name}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#8C8270] font-normal">{pattern.count}</span>
-                    <span className="font-mono text-amber-900">{pattern.percentage}%</span>
+          {fraudPatterns.length > 0 ? (
+            <div className="space-y-4">
+              {fraudPatterns.map((pattern) => (
+                <div key={pattern.name} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-bold">
+                    <span className="text-[#1A1612]">{pattern.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#8C8270] font-normal">{pattern.count}</span>
+                      <span className="font-mono text-amber-900">{pattern.percentage}%</span>
+                    </div>
+                  </div>
+                  <div className="w-full bg-[#FAF8F4] border border-[#EBE3D0] h-3 rounded-full overflow-hidden p-0.5">
+                    <div
+                      className={`h-full rounded-full ${pattern.color || 'bg-gradient-to-r from-amber-500 to-yellow-600'}`}
+                      style={{ width: `${pattern.percentage}%` }}
+                    ></div>
                   </div>
                 </div>
-                <div className="w-full bg-[#FAF8F4] border border-[#EBE3D0] h-3 rounded-full overflow-hidden p-0.5">
-                  <div
-                    className={`h-full rounded-full ${pattern.color || 'bg-gradient-to-r from-amber-500 to-yellow-600'}`}
-                    style={{ width: `${pattern.percentage}%` }}
-                  ></div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-12 flex flex-col items-center justify-center text-center p-6 border border-dashed border-[#E5DCBE] rounded-2xl bg-[#FAF8F2]/60">
+              <ShieldAlert className="w-8 h-8 text-amber-500/40 mb-2" />
+              <p className="text-xs font-bold text-[#4A4438]">No fraud attack vectors identified</p>
+              <p className="text-[11px] text-[#8C8270] mt-0.5">Transactions processed through the system have matched expected verification patterns.</p>
+            </div>
+          )}
         </div>
 
         {/* Right: High-Risk Geographies */}
@@ -279,19 +283,27 @@ export default function Analytics() {
               Locations exhibiting disproportionate anomaly velocities
             </p>
 
-            <div className="space-y-3">
-              {highRiskGeos.map((geo, idx) => (
-                <div key={idx} className="p-3.5 rounded-2xl bg-[#FCFAF5] border border-[#EBE3D0] flex items-center justify-between text-xs">
-                  <div>
-                    <span className="font-bold text-[#1A1612] block">{geo.name}</span>
-                    <div className="text-[11px] text-[#5C5648] mt-0.5">{geo.reason}</div>
+            {highRiskGeos.length > 0 ? (
+              <div className="space-y-3">
+                {highRiskGeos.map((geo, idx) => (
+                  <div key={idx} className="p-3.5 rounded-2xl bg-[#FCFAF5] border border-[#EBE3D0] flex items-center justify-between text-xs">
+                    <div>
+                      <span className="font-bold text-[#1A1612] block">{geo.name}</span>
+                      <div className="text-[11px] text-[#5C5648] mt-0.5">{geo.reason}</div>
+                    </div>
+                    <span className={`font-bold font-mono px-2 py-0.5 rounded-full ${geo.color || 'text-rose-700 bg-rose-50 border border-rose-200'}`}>
+                      {geo.risk || geo.flagged_pct}
+                    </span>
                   </div>
-                  <span className={`font-bold font-mono px-2 py-0.5 rounded-full ${geo.color || 'text-rose-700 bg-rose-50 border border-rose-200'}`}>
-                    {geo.risk || geo.flagged_pct}
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 flex flex-col items-center justify-center text-center p-6 border border-dashed border-[#E5DCBE] rounded-2xl bg-[#FAF8F2]/60">
+                <BarChart3 className="w-8 h-8 text-amber-500/40 mb-2" />
+                <p className="text-xs font-bold text-[#4A4438]">No anomalous geographic clusters</p>
+                <p className="text-[11px] text-[#8C8270] mt-0.5">Origin IPs and network routing endpoints are operating within normal parameters.</p>
+              </div>
+            )}
           </div>
 
           <div className="mt-4 pt-4 border-t border-[#EAE2CE] text-xs text-[#8C8270] text-center font-medium">

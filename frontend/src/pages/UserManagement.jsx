@@ -26,36 +26,6 @@ export default function UserManagement() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const fallbackUsers = [
-    {
-      id: 'usr_1',
-      name: 'System Administrator',
-      email: 'admin@fraudsentinel.com',
-      role: 'Admin',
-      status: 'Active',
-      lastActive: 'Just now',
-      avatarColor: 'from-amber-500 to-yellow-600',
-    },
-    {
-      id: 'usr_2',
-      name: 'Senior Fraud Analyst',
-      email: 'analyst@fraudsentinel.com',
-      role: 'Fraud Analyst',
-      status: 'Active',
-      lastActive: '10 mins ago',
-      avatarColor: 'from-blue-500 to-indigo-600',
-    },
-    {
-      id: 'usr_3',
-      name: 'ML Operations Analyst',
-      email: 'ml-ops@fraudsentinel.com',
-      role: 'Fraud Analyst',
-      status: 'Active',
-      lastActive: '25 mins ago',
-      avatarColor: 'from-emerald-500 to-teal-600',
-    },
-  ];
-
   const fetchUsersList = async (showPulse = false) => {
     if (showPulse) setIsRefreshing(true);
     else setIsLoading(true);
@@ -93,12 +63,11 @@ export default function UserManagement() {
         });
         setUsers(mapped);
       } else {
-        setUsers(fallbackUsers);
+        setUsers([]);
       }
     } catch (err) {
-      console.warn('API error fetching users, using local list:', err);
-      setError('Live user registry notice: operating with fallback verified accounts.');
-      setUsers(fallbackUsers);
+      console.warn('API error fetching users:', err);
+      setUsers([]);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -270,8 +239,14 @@ export default function UserManagement() {
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="py-12 text-center text-[#8C8270]">
-                    No users found in organization.
+                  <td colSpan="5" className="py-14 text-center text-[#8C8270]">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200/70 flex items-center justify-center text-amber-600">
+                        <Users className="w-5 h-5 text-amber-600/60" />
+                      </div>
+                      <span className="text-sm font-bold text-[#4A4438]">No users registered</span>
+                      <span className="text-xs text-[#8C8270]">Click &ldquo;Add Team Member&rdquo; above to invite members to the organization.</span>
+                    </div>
                   </td>
                 </tr>
               ) : (
