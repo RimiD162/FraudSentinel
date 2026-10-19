@@ -15,8 +15,8 @@ import {
 import { useRole, ROLE_CREDENTIALS } from '../context/RoleContext.jsx';
 
 /**
- * Enterprise Authentication Page Component (Route: `/login` or `/auth`)
- * Formal corporate portal providing secure Sign In with a lower Sign Up option for Fraud Analysts.
+ * Enterprise User Authentication Page Component (Route: `/login/user` or `/auth`)
+ * Formal corporate portal providing secure Sign In with a lower Sign Up option for Users.
  */
 export default function Login() {
   const navigate = useNavigate();
@@ -161,12 +161,12 @@ export default function Login() {
             {/* Header Title */}
             <div className="mb-6">
               <h1 className="text-2xl font-extrabold text-[#1A1612] tracking-tight">
-                {authMode === 'signin' ? 'Sign in to Analyst Portal' : 'Create an Analyst Account'}
+                {authMode === 'signin' ? 'Sign in to User Portal' : 'Create a User Account'}
               </h1>
               <p className="text-xs sm:text-sm text-[#5C5648] mt-1.5 leading-relaxed">
                 {authMode === 'signin'
                   ? 'Enter your corporate credentials to access the security terminal.'
-                  : 'Enter your corporate details to set up your analyst account.'}
+                  : 'Enter your corporate details to set up your user account.'}
               </p>
             </div>
 
@@ -327,7 +327,7 @@ export default function Login() {
                 <div>
                   {authMode === 'signin' ? (
                     <span>
-                      Don't have an analyst account?{' '}
+                      Don't have a user account?{' '}
                       <button
                         type="button"
                         onClick={() => handleModeSwitch('signup')}
@@ -338,7 +338,7 @@ export default function Login() {
                     </span>
                   ) : (
                     <span>
-                      Already have an analyst account?{' '}
+                      Already have a user account?{' '}
                       <button
                         type="button"
                         onClick={() => handleModeSwitch('signin')}

@@ -125,7 +125,7 @@ export default function AdminLogin() {
         // STRICT ENFORCEMENT: Reject if the user does not possess admin privileges
         if (userRole && userRole !== 'admin') {
           setErrorMessage(
-            `Access Denied: Account '${email.trim()}' is registered with '${res.role}' role. This portal is strictly restricted to System Administrators. Please use the Analyst Portal.`
+            `Access Denied: Account '${email.trim()}' is registered with '${res.role}' role. This portal is strictly restricted to System Administrators. Please use the User Portal.`
           );
           setRole('analyst');
           setLoading(false);
@@ -187,11 +187,11 @@ export default function AdminLogin() {
 
         <div className="flex items-center gap-3">
           <Link
-            to="/login/analyst"
+            to="/login/user"
             className="inline-flex items-center gap-1.5 text-xs font-bold text-[#5C5648] hover:text-amber-900 transition-colors bg-white px-3.5 py-1.5 rounded-lg border border-[#E5DCBE] shadow-xs hover:border-amber-400"
           >
             <Cpu className="w-3.5 h-3.5 text-amber-600" />
-            Analyst Portal
+            User Portal
           </Link>
           <Link
             to="/"
@@ -421,10 +421,10 @@ export default function AdminLogin() {
 
                 <div className="pt-2 border-t border-[#F2ECE0]">
                   <Link
-                    to="/login/analyst"
+                    to="/login/user"
                     className="font-semibold text-amber-800 hover:text-amber-950 transition-colors inline-flex items-center gap-1"
                   >
-                    <span>Switch to Fraud Analyst Portal →</span>
+                    <span>Switch to User Portal →</span>
                   </Link>
                 </div>
               </div>

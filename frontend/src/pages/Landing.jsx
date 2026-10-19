@@ -1,7 +1,6 @@
 import React from 'react';
 import NavBar from '../components/landing/NavBar.jsx';
 import Hero from '../components/landing/Hero.jsx';
-import StatsBar from '../components/landing/StatsBar.jsx';
 import FeatureGrid from '../components/landing/FeatureGrid.jsx';
 import ProductPreview from '../components/landing/ProductPreview.jsx';
 import HowItWorks from '../components/landing/HowItWorks.jsx';
@@ -18,7 +17,6 @@ export default function Landing() {
       <NavBar />
       <main className="flex-1">
         <Hero />
-        <StatsBar />
         <FeatureGrid />
         <ProductPreview />
         <HowItWorks />

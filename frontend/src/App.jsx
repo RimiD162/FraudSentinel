@@ -29,13 +29,19 @@ export default function App() {
           {/* Public Landing Page */}
           <Route path="/" element={<Landing />} />
 
-          {/* Dedicated Fraud Analyst Authentication Page */}
-          <Route path="/login/analyst" element={<Login />} />
-          <Route path="/login/Analyst" element={<Login />} />
-          <Route path="/analyst/login" element={<Login />} />
-          <Route path="/analyst" element={<Navigate to="/login/analyst" replace />} />
-          <Route path="/login" element={<Navigate to="/login/analyst" replace />} />
-          <Route path="/auth" element={<Navigate to="/login/analyst" replace />} />
+          {/* Dedicated User Authentication Page */}
+          <Route path="/login/user" element={<Login />} />
+          <Route path="/login/User" element={<Login />} />
+          <Route path="/user/login" element={<Login />} />
+          <Route path="/user" element={<Navigate to="/login/user" replace />} />
+          <Route path="/login" element={<Navigate to="/login/user" replace />} />
+          <Route path="/auth" element={<Navigate to="/login/user" replace />} />
+
+          {/* Backward compatibility redirects for /login/analyst */}
+          <Route path="/login/analyst" element={<Navigate to="/login/user" replace />} />
+          <Route path="/login/Analyst" element={<Navigate to="/login/user" replace />} />
+          <Route path="/analyst/login" element={<Navigate to="/login/user" replace />} />
+          <Route path="/analyst" element={<Navigate to="/login/user" replace />} />
 
           {/* Dedicated System Administrator Only Authentication Portal */}
           <Route path="/login/admin" element={<AdminLogin />} />

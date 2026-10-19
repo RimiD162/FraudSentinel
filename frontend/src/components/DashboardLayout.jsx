@@ -109,7 +109,7 @@ export default function DashboardLayout() {
 
             {/* Sign Out Button */}
             <Link
-              to={role === 'admin' ? '/login/admin' : '/login/analyst'}
+              to={role === 'admin' ? '/login/admin' : '/login/user'}
               onClick={() => logout()}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-amber-50 text-xs font-semibold text-[#5C5648] hover:text-amber-900 border border-[#E5DCBE] hover:border-amber-400 transition-colors shadow-2xs"
               title="Sign Out to Login Portal"

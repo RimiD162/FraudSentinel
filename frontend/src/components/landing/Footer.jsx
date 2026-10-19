@@ -74,11 +74,11 @@ export default function Footer() {
                 PCI-DSS Level 1 Certified
               </span>
               <Link
-                to="/login/analyst"
+                to="/login/user"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-amber-50 border border-[#E5DCBE] hover:border-amber-400 text-xs font-semibold text-[#5C5648] hover:text-amber-900 transition-colors shadow-2xs"
-                title="Fraud Analyst Portal"
+                title="User Portal"
               >
-                <span>Analyst Portal →</span>
+                <span>User Portal →</span>
               </Link>
               <Link
                 to="/login/admin"
