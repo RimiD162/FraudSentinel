@@ -15,8 +15,8 @@ export const ROLE_PERMISSIONS = {
     fraudAlerts: 'full',
     analytics: 'full',
     reports: 'full',
-    userManagement: 'full',
-    settings: 'full',
+    userManagement: 'hidden',
+    settings: 'hidden',
   },
   analyst: {
     dashboard: 'full',

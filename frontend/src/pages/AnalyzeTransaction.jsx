@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useViewOnly } from '../components/RoleGuard.jsx';
 import {
   Search,
@@ -12,8 +12,60 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
+  Check,
+  X,
 } from 'lucide-react';
 import { analyzeTransaction } from '../services/api.js';
+
+// Indian States (28)
+const INDIAN_STATES = [
+  'Andhra Pradesh',
+  'Arunachal Pradesh',
+  'Assam',
+  'Bihar',
+  'Chhattisgarh',
+  'Goa',
+  'Gujarat',
+  'Haryana',
+  'Himachal Pradesh',
+  'Jharkhand',
+  'Karnataka',
+  'Kerala',
+  'Madhya Pradesh',
+  'Maharashtra',
+  'Manipur',
+  'Meghalaya',
+  'Mizoram',
+  'Nagaland',
+  'Odisha',
+  'Punjab',
+  'Rajasthan',
+  'Sikkim',
+  'Tamil Nadu',
+  'Telangana',
+  'Tripura',
+  'Uttar Pradesh',
+  'Uttarakhand',
+  'West Bengal',
+];
+
+// Union Territories (8)
+const UNION_TERRITORIES = [
+  'Andaman and Nicobar Islands',
+  'Chandigarh',
+  'Dadra and Nagar Haveli and Daman and Diu',
+  'Delhi',
+  'Jammu and Kashmir',
+  'Ladakh',
+  'Lakshadweep',
+  'Puducherry',
+];
+
+// Special / Fallback Categories
+const OTHER_LOCATIONS = [
+  'Outside India',
+  'Unknown / Not Provided',
+];
 
 /**
  * AnalyzeTransaction Page Component
@@ -21,6 +73,12 @@ import { analyzeTransaction } from '../services/api.js';
  * and symbolic KR&R anomaly detection on arbitrary transaction payloads.
  * Styled in luxury White & Gold theme.
  */
+const getLocalDateTimeString = () => {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
 export default function AnalyzeTransaction() {
   const isViewOnly = useViewOnly();
 
@@ -28,10 +86,11 @@ export default function AnalyzeTransaction() {
     transaction_id: 'TXN-90214',
     customer_id: 'C2757',
     amount: '1420.00',
-    transaction_type: 'transfer',
-    location: 'California',
+    transaction_type: 'UPI',
+    location: '',
     device_type: 'POS',
     previous_transactions_count: '2',
+    transaction_time: getLocalDateTimeString(),
     riskThreshold: '70',
   });
 
@@ -39,6 +98,23 @@ export default function AnalyzeTransaction() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showDeepReasoning, setShowDeepReasoning] = useState(false);
+
+  // Searchable location dropdown state
+  const [isLocationOpen, setIsLocationOpen] = useState(false);
+  const [locationSearch, setLocationSearch] = useState('');
+  const locationDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (locationDropdownRef.current && !locationDropdownRef.current.contains(event.target)) {
+        setIsLocationOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleInputChange = (field, value) => {
     if (isViewOnly) return;
@@ -48,6 +124,12 @@ export default function AnalyzeTransaction() {
   const handleRunAnalysis = async (e) => {
     e.preventDefault();
     if (isViewOnly) return;
+
+    // Validate location selection
+    if (!formData.location || formData.location.trim() === '') {
+      setError('Please select a valid Location (State or Region).');
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -60,8 +142,8 @@ export default function AnalyzeTransaction() {
       customer_id: formData.customer_id || 'CUST_DEFAULT',
       amount: cleanAmount,
       transaction_type: formData.transaction_type,
-      transaction_time: new Date().toISOString(),
-      location: formData.location || 'New York',
+      transaction_time: formData.transaction_time ? new Date(formData.transaction_time).toISOString() : new Date().toISOString(),
+      location: formData.location.trim(),
       device_type: formData.device_type || 'mobile',
       previous_transactions_count: prevCount,
     };
@@ -83,15 +165,28 @@ export default function AnalyzeTransaction() {
       transaction_id: `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
       customer_id: 'C1001',
       amount: '250.00',
-      transaction_type: 'payment',
-      location: 'New York',
+      transaction_type: 'UPI',
+      location: '',
       device_type: 'mobile',
       previous_transactions_count: '5',
+      transaction_time: getLocalDateTimeString(),
       riskThreshold: '70',
     });
     setAnalysisResult(null);
     setError(null);
+    setLocationSearch('');
+    setIsLocationOpen(false);
   };
+
+  const filteredStates = INDIAN_STATES.filter((s) =>
+    s.toLowerCase().includes(locationSearch.toLowerCase())
+  );
+  const filteredUTs = UNION_TERRITORIES.filter((ut) =>
+    ut.toLowerCase().includes(locationSearch.toLowerCase())
+  );
+  const filteredOthers = OTHER_LOCATIONS.filter((o) =>
+    o.toLowerCase().includes(locationSearch.toLowerCase())
+  );
 
   // Score display helper
   const scoreNumber = analysisResult ? Math.round(analysisResult.risk_score * 100) : 87;
@@ -186,34 +281,164 @@ export default function AnalyzeTransaction() {
                   disabled={isViewOnly}
                   className="w-full bg-[#FAF8F4] border border-[#E5DCBE] focus:bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-400/20 rounded-xl px-3.5 py-2.5 text-sm text-[#1A1612] font-medium transition-all outline-none disabled:opacity-50"
                 >
-                  <option value="payment">Payment</option>
-                  <option value="transfer">Transfer</option>
-                  <option value="withdrawal">Withdrawal</option>
-                  <option value="deposit">Deposit</option>
+                  <option value="UPI">UPI</option>
+                  <option value="ATM">ATM</option>
+                  <option value="POS">POS</option>
+                  <option value="NEFT">NEFT</option>
+                  <option value="IMPS">IMPS</option>
+                  <option value="Others">Others</option>
                 </select>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
+              <div className="relative" ref={locationDropdownRef}>
                 <label className="block text-xs font-bold text-[#1A1612] uppercase tracking-wider mb-1.5">
                   Location (State / Region)
                 </label>
-                <select
-                  value={formData.location}
-                  onChange={(e) => handleInputChange('location', e.target.value)}
+                <button
+                  type="button"
+                  onClick={() => !isViewOnly && setIsLocationOpen((prev) => !prev)}
                   disabled={isViewOnly}
-                  className="w-full bg-[#FAF8F4] border border-[#E5DCBE] focus:bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-400/20 rounded-xl px-3.5 py-2.5 text-sm text-[#1A1612] font-medium transition-all outline-none disabled:opacity-50"
+                  className={`w-full bg-[#FAF8F4] border ${
+                    !formData.location && error ? 'border-rose-400 ring-2 ring-rose-400/20' : isLocationOpen ? 'border-amber-500 ring-2 ring-amber-400/20 bg-white' : 'border-[#E5DCBE]'
+                  } focus:bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-400/20 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all outline-none disabled:opacity-50 flex items-center justify-between text-left cursor-pointer`}
                 >
-                  <option value="California">California</option>
-                  <option value="Florida">Florida</option>
-                  <option value="Georgia">Georgia</option>
-                  <option value="Illinois">Illinois</option>
-                  <option value="New York">New York</option>
-                  <option value="Texas">Texas</option>
-                  <option value="Washington">Washington</option>
-                  <option value="Lagos, Nigeria">Lagos, Nigeria (High-Risk)</option>
-                </select>
+                  <span className={formData.location ? 'text-[#1A1612]' : 'text-[#8C8270]'}>
+                    {formData.location || 'Select state or region'}
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-amber-600 transition-transform duration-200 ${
+                      isLocationOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                {isLocationOpen && (
+                  <div className="absolute z-50 left-0 right-0 mt-1.5 bg-white border border-[#E5DCBE] rounded-xl shadow-xl shadow-amber-500/10 overflow-hidden">
+                    {/* Search Input */}
+                    <div className="p-2 border-b border-[#EAE2CE] bg-[#FAF8F4]">
+                      <div className="relative">
+                        <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-amber-600" />
+                        <input
+                          type="text"
+                          value={locationSearch}
+                          onChange={(e) => setLocationSearch(e.target.value)}
+                          placeholder="Search state or region..."
+                          autoFocus
+                          className="w-full bg-white border border-[#E5DCBE] focus:border-amber-500 focus:ring-1 focus:ring-amber-400/20 rounded-lg pl-8 pr-7 py-1.5 text-xs text-[#1A1612] outline-none"
+                        />
+                        {locationSearch && (
+                          <button
+                            type="button"
+                            onClick={() => setLocationSearch('')}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-[#8C8270] hover:text-[#1A1612]"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Filtered Results */}
+                    <div className="max-h-56 overflow-y-auto py-1 text-xs">
+                      {filteredStates.length > 0 && (
+                        <div>
+                          <div className="px-3 py-1 text-[10px] font-bold text-[#8C8270] uppercase tracking-wider bg-[#FAF8F4]/80">
+                            Indian States ({filteredStates.length})
+                          </div>
+                          {filteredStates.map((loc) => (
+                            <button
+                              key={loc}
+                              type="button"
+                              onClick={() => {
+                                handleInputChange('location', loc);
+                                setIsLocationOpen(false);
+                                setLocationSearch('');
+                              }}
+                              className={`w-full text-left px-3.5 py-2 flex items-center justify-between hover:bg-amber-50 hover:text-amber-900 transition-colors cursor-pointer ${
+                                formData.location === loc
+                                  ? 'bg-amber-50/80 text-amber-900 font-bold'
+                                  : 'text-[#1A1612]'
+                              }`}
+                            >
+                              <span>{loc}</span>
+                              {formData.location === loc && (
+                                <Check className="w-3.5 h-3.5 text-amber-600" />
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {filteredUTs.length > 0 && (
+                        <div>
+                          <div className="px-3 py-1 text-[10px] font-bold text-[#8C8270] uppercase tracking-wider bg-[#FAF8F4]/80">
+                            Union Territories ({filteredUTs.length})
+                          </div>
+                          {filteredUTs.map((loc) => (
+                            <button
+                              key={loc}
+                              type="button"
+                              onClick={() => {
+                                handleInputChange('location', loc);
+                                setIsLocationOpen(false);
+                                setLocationSearch('');
+                              }}
+                              className={`w-full text-left px-3.5 py-2 flex items-center justify-between hover:bg-amber-50 hover:text-amber-900 transition-colors cursor-pointer ${
+                                formData.location === loc
+                                  ? 'bg-amber-50/80 text-amber-900 font-bold'
+                                  : 'text-[#1A1612]'
+                              }`}
+                            >
+                              <span>{loc}</span>
+                              {formData.location === loc && (
+                                <Check className="w-3.5 h-3.5 text-amber-600" />
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {filteredOthers.length > 0 && (
+                        <div>
+                          <div className="px-3 py-1 text-[10px] font-bold text-[#8C8270] uppercase tracking-wider bg-[#FAF8F4]/80">
+                            Special Categories
+                          </div>
+                          {filteredOthers.map((loc) => (
+                            <button
+                              key={loc}
+                              type="button"
+                              onClick={() => {
+                                handleInputChange('location', loc);
+                                setIsLocationOpen(false);
+                                setLocationSearch('');
+                              }}
+                              className={`w-full text-left px-3.5 py-2 flex items-center justify-between hover:bg-amber-50 hover:text-amber-900 transition-colors cursor-pointer ${
+                                formData.location === loc
+                                  ? 'bg-amber-50/80 text-amber-900 font-bold'
+                                  : 'text-[#1A1612]'
+                              }`}
+                            >
+                              <span>{loc}</span>
+                              {formData.location === loc && (
+                                <Check className="w-3.5 h-3.5 text-amber-600" />
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {filteredStates.length === 0 &&
+                        filteredUTs.length === 0 &&
+                        filteredOthers.length === 0 && (
+                          <div className="px-4 py-6 text-center text-xs text-[#8C8270]">
+                            No state or region matches "{locationSearch}"
+                          </div>
+                        )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -234,18 +459,33 @@ export default function AnalyzeTransaction() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-[#1A1612] uppercase tracking-wider mb-1.5">
-                Previous Transactions Count
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={formData.previous_transactions_count}
-                onChange={(e) => handleInputChange('previous_transactions_count', e.target.value)}
-                disabled={isViewOnly}
-                className="w-full bg-[#FAF8F4] border border-[#E5DCBE] focus:bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-400/20 rounded-xl px-3.5 py-2.5 text-sm text-[#1A1612] font-medium transition-all outline-none disabled:opacity-50"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-[#1A1612] uppercase tracking-wider mb-1.5">
+                  Previous Transactions Count
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.previous_transactions_count}
+                  onChange={(e) => handleInputChange('previous_transactions_count', e.target.value)}
+                  disabled={isViewOnly}
+                  className="w-full bg-[#FAF8F4] border border-[#E5DCBE] focus:bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-400/20 rounded-xl px-3.5 py-2.5 text-sm text-[#1A1612] font-medium transition-all outline-none disabled:opacity-50"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#1A1612] uppercase tracking-wider mb-1.5">
+                  Transaction Date & Time
+                </label>
+                <input
+                  type="datetime-local"
+                  value={formData.transaction_time}
+                  onChange={(e) => handleInputChange('transaction_time', e.target.value)}
+                  disabled={isViewOnly}
+                  className="w-full bg-[#FAF8F4] border border-[#E5DCBE] focus:bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-400/20 rounded-xl px-3.5 py-2.5 text-sm text-[#1A1612] font-medium transition-all outline-none disabled:opacity-50"
+                />
+              </div>
             </div>
 
             <div>

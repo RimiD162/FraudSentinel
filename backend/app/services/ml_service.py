@@ -174,7 +174,7 @@ class MLInferenceService:
         amount = float(tx_data.get("amount", tx_data.get("transaction_amount", 100.0)))
         prev_count = int(tx_data.get("previous_transactions_count", 0))
         tx_type = str(tx_data.get("transaction_type", "payment")).lower()
-        location = str(tx_data.get("location", tx_data.get("transaction_location", "New York")))
+        location = str(tx_data.get("location") or tx_data.get("transaction_location") or "")
         device = str(tx_data.get("device_type", "mobile"))
 
         # Explicit features override if provided in payload
@@ -226,9 +226,9 @@ class MLInferenceService:
             "customer_unique_device_count": custom_feats.get("customer_unique_device_count", 1),
             # Transaction Types
             "transaction_type=deposit": 1 if tx_type == "deposit" else 0,
-            "transaction_type=payment": 1 if tx_type == "payment" else 0,
-            "transaction_type=transfer": 1 if tx_type == "transfer" else 0,
-            "transaction_type=withdrawal": 1 if tx_type == "withdrawal" else 0,
+            "transaction_type=payment": 1 if tx_type in ["payment", "pos", "upi"] else 0,
+            "transaction_type=transfer": 1 if tx_type in ["transfer", "neft", "imps"] else 0,
+            "transaction_type=withdrawal": 1 if tx_type in ["withdrawal", "atm"] else 0,
             # Locations
             "transaction_location=California": 1 if "california" in location.lower() else 0,
             "transaction_location=Florida": 1 if "florida" in location.lower() else 0,
@@ -359,7 +359,7 @@ class MLInferenceService:
                 "Transaction executed during abnormal night hours (10:00 PM - 5:00 AM)."
             )
 
-        if tx_type in ["transfer", "withdrawal"] and amount > 500:
+        if tx_type in ["transfer", "withdrawal", "upi", "neft", "imps", "atm"] and amount > 500:
             explanations.append(
                 f"High-velocity monetary exit via {tx_type.upper()} channel."
             )

@@ -25,7 +25,7 @@ import { useRole, ROLE_CREDENTIALS } from '../context/RoleContext.jsx';
  */
 export default function AdminLogin() {
   const navigate = useNavigate();
-  const { loginWithCredentials, registerWithCredentials, setRole, apiStatus } = useRole();
+  const { loginWithCredentials, registerWithCredentials, isSupabaseConfigured, apiStatus } = useRole();
 
   const adminCreds = ROLE_CREDENTIALS.admin || {
     email: 'admin@fraudsentinel.com',
@@ -35,8 +35,8 @@ export default function AdminLogin() {
 
   const [authMode, setAuthMode] = useState('signin'); // 'signin' | 'signup'
   const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState(adminCreds.email);
-  const [password, setPassword] = useState(adminCreds.password);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [adminToken, setAdminToken] = useState('');
@@ -50,17 +50,13 @@ export default function AdminLogin() {
     setAuthMode(mode);
     setErrorMessage(null);
     setSuccessMessage(null);
-    if (mode === 'signin') {
-      setEmail(adminCreds.email);
-      setPassword(adminCreds.password);
-    } else {
-      setEmail('');
-      setPassword('');
-      setConfirmPassword('');
-      setFullName('');
-      setAdminToken('');
-    }
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setFullName('');
+    setAdminToken('');
   };
+
 
   const handleAdminSubmit = async (e) => {
     e?.preventDefault();
@@ -83,30 +79,17 @@ export default function AdminLogin() {
 
       setLoading(true);
       try {
-        await registerWithCredentials(email.trim(), password, fullName.trim(), 'admin');
-        setRole('admin');
-        setSuccessMessage('Administrator account provisioned successfully! Redirecting to Admin Console...');
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 600);
-      } catch (err) {
-        console.warn('[Admin Registration Notice]:', err.message);
-
-        // Fallback for simulated/offline mode
-        if (
-          err.message?.includes('Failed to fetch') ||
-          err.message?.includes('offline') ||
-          err.message?.includes('NetworkError') ||
-          err.message?.includes('404')
-        ) {
-          setRole('admin');
-          setSuccessMessage('Administrator account registered (Local Session).');
+        const res = await registerWithCredentials(email.trim(), password, fullName.trim(), 'admin');
+        if (res?.status === 'confirmation_required') {
+          setSuccessMessage(res.message);
+        } else {
+          setSuccessMessage('Administrator account provisioned successfully! Launching Admin Console...');
           setTimeout(() => {
             navigate('/dashboard');
-          }, 600);
-        } else {
-          setErrorMessage(err.message || 'Administrator registration failed. Please try again.');
+          }, 500);
         }
+      } catch (err) {
+        setErrorMessage(err.message || 'Administrator registration failed. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -122,46 +105,27 @@ export default function AdminLogin() {
         const res = await loginWithCredentials(email.trim(), password);
         const userRole = (res?.role || '').toLowerCase();
 
-        // STRICT ENFORCEMENT: Reject if the user does not possess admin privileges
-        if (userRole && userRole !== 'admin') {
+        // STRICT ENFORCEMENT: Reject if the user does not possess verified admin privileges
+        if (userRole !== 'admin') {
           setErrorMessage(
-            `Access Denied: Account '${email.trim()}' is registered with '${res.role}' role. This portal is strictly restricted to System Administrators. Please use the User Portal.`
+            `Access Denied: Account '${email.trim()}' is registered with '${res?.role || 'non-admin'}' role. This portal is strictly restricted to System Administrators.`
           );
-          setRole('analyst');
           setLoading(false);
           return;
         }
 
-        setRole('admin');
         setSuccessMessage('Administrator credentials verified. Launching Admin Console...');
         setTimeout(() => {
           navigate('/dashboard');
         }, 500);
       } catch (err) {
-        console.warn('[Admin Auth Notice]:', err.message);
-
-        // Fallback check for simulated/offline mode if email is admin
-        if (
-          email.trim().toLowerCase() === adminCreds.email.toLowerCase() ||
-          email.trim().toLowerCase().includes('admin')
-        ) {
-          setRole('admin');
-          setSuccessMessage('Local Administrator session authenticated.');
-          setTimeout(() => {
-            navigate('/dashboard');
-          }, 500);
-        } else {
-          setErrorMessage(
-            err.message?.includes('401') || err.message?.includes('credentials')
-              ? 'Invalid administrator credentials. Only verified system administrators may authenticate here.'
-              : err.message || 'Administrator authentication failed. Access rejected.'
-          );
-        }
+        setErrorMessage(err.message || 'Administrator authentication failed. Access rejected.');
       } finally {
         setLoading(false);
       }
     }
   };
+
 
   const handleAutofillAdmin = () => {
     setEmail(adminCreds.email);
@@ -213,19 +177,32 @@ export default function AdminLogin() {
           <div className="relative z-10">
             {/* Header Title & Admin Security Badge */}
             <div className="mb-6 text-center sm:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-amber-100 to-yellow-100 border border-amber-300 text-amber-900 text-xs font-bold mb-3 shadow-xs">
-                <ShieldAlert className="w-3.5 h-3.5 text-amber-700" />
-                <span>Restricted • System Administrator Only</span>
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-amber-100 to-yellow-100 border border-amber-300 text-amber-900 text-xs font-bold shadow-xs">
+                  <ShieldAlert className="w-3.5 h-3.5 text-amber-700" />
+                  <span>Restricted • System Administrator Only</span>
+                </div>
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                  isSupabaseConfigured
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    : 'bg-amber-50 text-amber-900 border-amber-200'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${isSupabaseConfigured ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                  {isSupabaseConfigured ? '⚡ Supabase Auth' : '⚡ Local / Seed Auth'}
+                </span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1A1612] tracking-tight">
                 {authMode === 'signin' ? 'Admin Console Access' : 'Provision Admin Account'}
               </h1>
               <p className="text-xs sm:text-sm text-[#5C5648] mt-1.5 leading-relaxed">
                 {authMode === 'signin'
-                  ? 'Elevated privileges required. Full access to system telemetry, ML engine rules, and organization user management.'
+                  ? isSupabaseConfigured
+                    ? 'Elevated privileges required. Authenticate using verified administrator Supabase credentials.'
+                    : 'Elevated privileges required. Full access to system telemetry, ML engine rules, and organization user management.'
                   : 'Register a new administrator officer with full root permissions and security governance.'}
               </p>
             </div>
+
 
             {/* Error Alert */}
             {errorMessage && (
@@ -369,8 +346,36 @@ export default function AdminLogin() {
                 </div>
               </div>
 
+              {/* Quick Seed Credentials autofill helper */}
+
+              <div className="flex items-center justify-between text-xs py-1 px-1 bg-amber-50/50 rounded-lg border border-amber-200/50">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail(adminCreds.email);
+                    setPassword(adminCreds.password);
+                  }}
+                  className="text-amber-800 hover:text-amber-950 font-semibold hover:underline cursor-pointer flex items-center gap-1"
+                >
+                  <span>⚡ Quick fill seed admin credentials</span>
+                </button>
+                {(email || password) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('');
+                      setPassword('');
+                    }}
+                    className="text-[#8C8270] hover:text-[#1A1612] cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
               {/* Submit Admin Button */}
               <div className="pt-2">
+
                 <button
                   type="submit"
                   disabled={loading}

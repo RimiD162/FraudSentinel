@@ -208,7 +208,7 @@ def get_me(
 )
 def list_users(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_viewer),
+    current_user: User = Depends(require_admin),
 ) -> UserListResponse:
     users = db.query(User).all()
     items = []

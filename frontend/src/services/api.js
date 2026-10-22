@@ -72,14 +72,9 @@ async function request(endpoint, options = {}, isRetry = false) {
   try {
     const response = await fetch(url, config);
 
-    // If unauthorized and we haven't retried yet, auto-login as current role and retry
-    if (response.status === 401 && !isRetry && !endpoint.includes('/auth/login')) {
-      try {
-        await loginRole(currentRole || 'admin');
-        return await request(endpoint, options, true);
-      } catch (authErr) {
-        console.warn('[API Auth Refresh Failed]:', authErr);
-      }
+    // If unauthorized, clear invalid token
+    if (response.status === 401) {
+      clearAuthToken();
     }
 
     if (!response.ok) {
@@ -149,14 +144,16 @@ export async function loginRole(roleName = 'admin') {
   return login(creds.email, creds.password);
 }
 
-export async function getMe() {
-  const data = await request('/auth/me');
+export async function getMe(explicitToken = null) {
+  const tokenToUse = explicitToken || currentToken;
+  const headers = tokenToUse ? { Authorization: `Bearer ${tokenToUse}` } : {};
+  const data = await request('/auth/me', { headers });
   currentUser = data;
   return data;
 }
 
-export async function getCurrentUser() {
-  return getMe();
+export async function getCurrentUser(explicitToken = null) {
+  return getMe(explicitToken);
 }
 
 export async function getUsers() {

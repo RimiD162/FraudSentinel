@@ -20,7 +20,7 @@ import { useRole, ROLE_CREDENTIALS } from '../context/RoleContext.jsx';
  */
 export default function Login() {
   const navigate = useNavigate();
-  const { loginWithCredentials, registerWithCredentials, setRole, apiStatus } = useRole();
+  const { loginWithCredentials, registerWithCredentials, isSupabaseConfigured, apiStatus, currentUser } = useRole();
 
   const analystCreds = ROLE_CREDENTIALS.analyst || {
     email: 'analyst@fraudsentinel.com',
@@ -30,8 +30,8 @@ export default function Login() {
 
   const [authMode, setAuthMode] = useState('signin'); // 'signin' | 'signup'
   const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState(analystCreds.email);
-  const [password, setPassword] = useState(analystCreds.password);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -39,21 +39,23 @@ export default function Login() {
   const [successMessage, setSuccessMessage] = useState(null);
   const [rememberMe, setRememberMe] = useState(true);
 
+  React.useEffect(() => {
+    if (currentUser) {
+      navigate('/dashboard');
+    }
+  }, [currentUser, navigate]);
+
   // Switch between Sign In and Sign Up modes
   const handleModeSwitch = (mode) => {
     setAuthMode(mode);
     setErrorMessage(null);
     setSuccessMessage(null);
-    if (mode === 'signin') {
-      setEmail(analystCreds.email);
-      setPassword(analystCreds.password);
-    } else {
-      setEmail('');
-      setPassword('');
-      setConfirmPassword('');
-      setFullName('');
-    }
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setFullName('');
   };
+
 
   // Submit login or registration request
   const handleSubmit = async (e) => {
@@ -77,22 +79,14 @@ export default function Login() {
 
       setLoading(true);
       try {
-        await registerWithCredentials(email.trim(), password, fullName.trim());
-        setRole('analyst');
-        navigate('/dashboard');
-      } catch (err) {
-        console.warn('[Signup Error]:', err.message);
-        if (
-          err.message?.includes('Failed to fetch') ||
-          err.message?.includes('offline') ||
-          err.message?.includes('NetworkError') ||
-          err.message?.includes('404')
-        ) {
-          setRole('analyst');
-          navigate('/dashboard');
+        const res = await registerWithCredentials(email.trim(), password, fullName.trim(), 'analyst');
+        if (res?.status === 'confirmation_required') {
+          setSuccessMessage(res.message);
         } else {
-          setErrorMessage(err.message || 'Registration failed. Please try again.');
+          navigate('/dashboard');
         }
+      } catch (err) {
+        setErrorMessage(err.message || 'Registration failed. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -106,26 +100,15 @@ export default function Login() {
       setLoading(true);
       try {
         await loginWithCredentials(email.trim(), password);
-        setRole('analyst');
         navigate('/dashboard');
       } catch (err) {
-        console.warn('[Login Error]:', err.message);
-        if (
-          err.message?.includes('Failed to fetch') ||
-          err.message?.includes('offline') ||
-          err.message?.includes('NetworkError') ||
-          err.message?.includes('404')
-        ) {
-          setRole('analyst');
-          navigate('/dashboard');
-        } else {
-          setErrorMessage(err.message || 'Authentication failed. Please verify your credentials.');
-        }
+        setErrorMessage(err.message || 'Authentication failed. Please verify your credentials.');
       } finally {
         setLoading(false);
       }
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#FAFAF8] via-[#FCFAF5] to-[#F5EFE0] text-[#1A1612] flex flex-col justify-between selection:bg-amber-400/30 selection:text-amber-950 font-sans">
@@ -160,15 +143,30 @@ export default function Login() {
           <div className="relative z-10">
             {/* Header Title */}
             <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                  isSupabaseConfigured
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    : 'bg-amber-50 text-amber-900 border-amber-200'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${isSupabaseConfigured ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                  {isSupabaseConfigured ? '⚡ Supabase Auth' : '⚡ Local / Seed Auth'}
+                </span>
+                <span className="text-[11px] text-[#8C8270] font-medium">Enterprise Portal</span>
+              </div>
+
               <h1 className="text-2xl font-extrabold text-[#1A1612] tracking-tight">
                 {authMode === 'signin' ? 'Sign in to User Portal' : 'Create a User Account'}
               </h1>
               <p className="text-xs sm:text-sm text-[#5C5648] mt-1.5 leading-relaxed">
                 {authMode === 'signin'
-                  ? 'Enter your corporate credentials to access the security terminal.'
-                  : 'Enter your corporate details to set up your user account.'}
+                  ? isSupabaseConfigured
+                    ? 'Enter your Supabase credentials to access the security terminal.'
+                    : 'Enter your credentials to access the security terminal.'
+                  : 'Enter your details to register your analyst account.'}
               </p>
             </div>
+
 
             {/* Error Alert */}
             {errorMessage && (
@@ -301,8 +299,36 @@ export default function Login() {
                 </div>
               </div>
 
+              {/* Quick Seed Credentials autofill helper */}
+
+              <div className="flex items-center justify-between text-xs py-1 px-1 bg-amber-50/50 rounded-lg border border-amber-200/50">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('analyst@fraudsentinel.com');
+                    setPassword('analyst123');
+                  }}
+                  className="text-amber-800 hover:text-amber-950 font-semibold hover:underline cursor-pointer flex items-center gap-1"
+                >
+                  <span>⚡ Quick fill seed test credentials</span>
+                </button>
+                {(email || password) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('');
+                      setPassword('');
+                    }}
+                    className="text-[#8C8270] hover:text-[#1A1612] cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
               {/* Submit Action */}
               <div className="pt-2">
+
                 <button
                   type="submit"
                   disabled={loading}

@@ -7,8 +7,6 @@ import {
   Bell,
   TrendingUp,
   BarChart3,
-  Users,
-  Settings,
   Shield,
 } from 'lucide-react';
 import { useRole } from '../context/RoleContext.jsx';
@@ -59,20 +57,6 @@ const NAV_ITEMS = [
     label: 'Reports',
     path: '/dashboard/reports',
     icon: BarChart3,
-  },
-  {
-    id: 'users',
-    permissionKey: 'userManagement',
-    label: 'User Management',
-    path: '/dashboard/users',
-    icon: Users,
-  },
-  {
-    id: 'settings',
-    permissionKey: 'settings',
-    label: 'Settings',
-    path: '/dashboard/settings',
-    icon: Settings,
   },
 ];
 

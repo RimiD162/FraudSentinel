@@ -1,21 +1,24 @@
-"""FastAPI Authentication and Role-Based Access Control (RBAC) dependencies."""
+"""FastAPI Authentication and Role-Based Access Control (RBAC) dependencies with Supabase JWT support."""
 
 from __future__ import annotations
 
 import json
-import uuid
+import logging
 from typing import Any, Callable, Optional, Sequence
+import uuid
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import ExpiredSignatureError, JWTError
-from sqlalchemy.orm import Session
+from jwt import ExpiredSignatureError, PyJWTError
 
 from app.core.database import get_db
-from app.core.security import decode_access_token
+from app.core.security import JWTError, decode_access_token, get_password_hash
 from app.models.audit_log import AuditLog
+from app.models.role import Role
 from app.models.user import User
+
+logger = logging.getLogger("fraudsentinel.auth")
 
 # HTTP Bearer security scheme (auto_error=False allows custom structured 401 exceptions)
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -56,7 +59,10 @@ def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
     db: Session = Depends(get_db),
 ) -> User:
-    """Dependency to extract, decode, and validate JWT Bearer token and return active User model."""
+    """Dependency to extract, decode, and validate Supabase/JWT Bearer token and return active User model.
+    
+    Roles and status are strictly resolved from server-side database records.
+    """
     client_ip = request.client.host if request.client else None
 
     if not credentials or not credentials.credentials:
@@ -75,7 +81,8 @@ def get_current_user(
             detail="Access token has expired. Please log in again.",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    except JWTError:
+    except (JWTError, PyJWTError) as e:
+        logger.warning("Token verification failure detail: %s", e)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or malformed access token.",
@@ -83,23 +90,62 @@ def get_current_user(
         )
 
     user_id_str: Optional[str] = payload.get("user_id") or payload.get("sub")
-    if not user_id_str:
+    email: Optional[str] = payload.get("email")
+
+    if not user_id_str and not email:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token payload is missing user identification.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    try:
-        user_uuid = UUID(user_id_str)
-    except (ValueError, TypeError):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid user ID format in token.",
-            headers={"WWW-Authenticate": "Bearer"},
+    # 1. Primary lookup by UUID
+    user: Optional[User] = None
+    user_uuid: Optional[UUID] = None
+    if user_id_str:
+        try:
+            user_uuid = UUID(user_id_str)
+            user = db.get(User, user_uuid)
+        except (ValueError, TypeError):
+            pass
+
+    # 2. Secondary lookup by email in SQLite database
+    if not user and email:
+        user = db.query(User).filter(User.email.ilike(email.strip())).first()
+
+    # 3. If user is authenticated via Supabase but has not been recorded in local SQLite yet:
+    # Auto-provision user record with trusted server-side default role (analyst / viewer)
+    if not user:
+        clean_email = email.strip().lower() if email else f"{user_id_str}@supabase.user"
+        # Server-enforced role: only predefined bootstrap emails can receive admin
+        default_role_name = "admin" if clean_email in ["admin@fraudsentinel.com"] else "analyst"
+        role = db.query(Role).filter(Role.name == default_role_name).first()
+        if not role:
+            role = db.query(Role).first()
+
+        metadata = payload.get("user_metadata") or {}
+        full_name = (
+            metadata.get("full_name")
+            or metadata.get("name")
+            or (clean_email.split("@")[0].title() if "@" in clean_email else "User")
         )
 
-    user = db.get(User, user_uuid)
+        user = User(
+            id=user_uuid if user_uuid else uuid.uuid4(),
+            email=clean_email,
+            hashed_password=get_password_hash(uuid.uuid4().hex),
+            full_name=full_name,
+            role_id=role.id if role else None,
+            is_active=True,
+        )
+        db.add(user)
+        try:
+            db.commit()
+            db.refresh(user)
+        except Exception:
+            db.rollback()
+            user = db.query(User).filter(User.email.ilike(clean_email)).first()
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -107,6 +153,7 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # 4. Check active status in trusted server-side data
     if not user.is_active:
         log_audit_event(
             db=db,
@@ -126,7 +173,7 @@ def get_current_user(
 
 
 def require_roles(allowed_roles: Sequence[str]) -> Callable[..., User]:
-    """RBAC Dependency Factory: Enforces that the current authenticated user possesses one of allowed_roles."""
+    """RBAC Dependency Factory: Enforces that the current authenticated user possesses one of allowed_roles in server-side DB."""
     normalized_allowed = [r.lower().strip() for r in allowed_roles]
 
     def role_checker(

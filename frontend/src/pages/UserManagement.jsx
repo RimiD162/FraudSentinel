@@ -48,7 +48,10 @@ export default function UserManagement() {
           const roleDisplay =
             roleNormalized === 'admin'
               ? 'Admin'
+              : roleNormalized === 'viewer'
+              ? 'Auditor / Viewer'
               : 'Fraud Analyst';
+
 
           return {
             id: u.id,

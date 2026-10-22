@@ -20,7 +20,7 @@ def test_get_analytics_summary(client: TestClient, analyst_headers: dict[str, st
     assert "generated_at" in data
 
 
-def test_get_analytics_trends(client: TestClient, analyst_headers: dict[str, str]):
+def test_get_analytics_trends(client: TestClient, analyst_headers: dict[str, str], sample_transaction):
     response = client.get("/api/v1/analytics/trends", headers=analyst_headers)
     assert response.status_code == 200
     data = response.json()
@@ -32,3 +32,4 @@ def test_get_analytics_trends(client: TestClient, analyst_headers: dict[str, str
     assert len(data["trends"]) > 0
     assert "fraud_rate" in data["trends"][0]
     assert "fraud_count" in data["trends"][0]
+
