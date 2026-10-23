@@ -83,7 +83,12 @@ export default function Sidebar() {
 
   // Filter items dynamically using centralized permission table and assign dedicated paths like /analyze/user
   const visibleNavItems = NAV_ITEMS
-    .filter((item) => getPermission(item.permissionKey) !== 'hidden')
+    .filter((item) => {
+      if (!isAdmin && (item.id === 'analytics' || item.id === 'reports' || item.id === 'users')) {
+        return false;
+      }
+      return getPermission(item.permissionKey) !== 'hidden';
+    })
     .map((item) => {
       if (item.id === 'dashboard') {
         return {

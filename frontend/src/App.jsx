@@ -174,14 +174,7 @@ export default function App() {
                 </RoleGuard>
               }
             />
-            <Route
-              path="/analytics/user"
-              element={
-                <RoleGuard section="analytics">
-                  <Analytics forceView="user" />
-                </RoleGuard>
-              }
-            />
+            <Route path="/analytics/user" element={<Navigate to="/dashboard/user" replace />} />
             <Route
               path="/analytics/admin"
               element={
@@ -191,7 +184,7 @@ export default function App() {
               }
             />
             <Route path="/dashboard/analytics" element={<Navigate to="/analytics" replace />} />
-            <Route path="/dashboard/analytics/user" element={<Navigate to="/analytics/user" replace />} />
+            <Route path="/dashboard/analytics/user" element={<Navigate to="/dashboard/user" replace />} />
             <Route path="/dashboard/analytics/admin" element={<Navigate to="/analytics/admin" replace />} />
 
             {/* Reports Routes */}
@@ -203,14 +196,7 @@ export default function App() {
                 </RoleGuard>
               }
             />
-            <Route
-              path="/reports/user"
-              element={
-                <RoleGuard section="reports">
-                  <Reports forceView="user" />
-                </RoleGuard>
-              }
-            />
+            <Route path="/reports/user" element={<Navigate to="/dashboard/user" replace />} />
             <Route
               path="/reports/admin"
               element={
@@ -220,7 +206,7 @@ export default function App() {
               }
             />
             <Route path="/dashboard/reports" element={<Navigate to="/reports" replace />} />
-            <Route path="/dashboard/reports/user" element={<Navigate to="/reports/user" replace />} />
+            <Route path="/dashboard/reports/user" element={<Navigate to="/dashboard/user" replace />} />
             <Route path="/dashboard/reports/admin" element={<Navigate to="/reports/admin" replace />} />
 
             {/* User Management */}

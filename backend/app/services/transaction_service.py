@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy import desc, func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.models.customer import Customer
 from app.models.fraud_alert import FraudAlert
@@ -296,14 +296,63 @@ class TransactionService:
         count_stmt = select(func.count()).select_from(stmt.subquery())
         total = db.scalar(count_stmt) or 0
 
-        # Pagination & Ordering
+        # Pagination & Ordering with eager-loaded predictions & alerts
         offset = (page - 1) * page_size
-        stmt = stmt.order_by(desc(Transaction.transaction_time)).offset(offset).limit(page_size)
+        stmt = (
+            stmt.options(
+                selectinload(Transaction.model_predictions),
+                selectinload(Transaction.fraud_alerts),
+            )
+            .order_by(desc(Transaction.transaction_time))
+            .offset(offset)
+            .limit(page_size)
+        )
 
         rows = db.scalars(stmt).all()
         total_pages = max(1, (total + page_size - 1) // page_size)
 
-        items = [TransactionResponse.model_validate(r) for r in rows]
+        items = []
+        for r in rows:
+            risk = None
+            if r.model_predictions:
+                probs = [p.fraud_probability for p in r.model_predictions]
+                if probs:
+                    risk = round(sum(probs) / len(probs), 4)
+            if risk is None:
+                if r.fraud_alerts:
+                    sev = r.fraud_alerts[0].severity.lower()
+                    sev_map = {"critical": 0.92, "high": 0.82, "medium": 0.55, "low": 0.18}
+                    risk = sev_map.get(sev, 0.75)
+                elif r.is_fraud:
+                    risk = 0.87
+                else:
+                    risk = 0.12
+
+            status_val = "Flagged" if r.is_fraud else "Approved"
+            if r.fraud_alerts:
+                alert_stat = r.fraud_alerts[0].status.lower()
+                if alert_stat == "under_review":
+                    status_val = "Under Review"
+                elif alert_stat == "cleared":
+                    status_val = "Approved"
+
+            items.append(
+                TransactionResponse(
+                    id=r.id,
+                    customer_id=r.customer_id,
+                    amount=r.amount,
+                    transaction_type=r.transaction_type,
+                    transaction_time=r.transaction_time,
+                    location=r.location,
+                    device_type=r.device_type,
+                    previous_transactions_count=r.previous_transactions_count,
+                    is_fraud=r.is_fraud,
+                    created_at=r.created_at,
+                    risk_score=risk,
+                    status=status_val,
+                )
+            )
+
         return TransactionListResponse(
             total=total,
             page=page,

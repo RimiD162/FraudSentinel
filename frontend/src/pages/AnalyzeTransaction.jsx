@@ -12,7 +12,6 @@ import {
   Activity,
   ChevronDown,
   ChevronUp,
-  Sparkles,
   Check,
   X,
   Sliders,
@@ -101,7 +100,7 @@ export default function AnalyzeTransaction({ forceView }) {
     device_type: 'POS',
     previous_transactions_count: '2',
     transaction_time: getLocalDateTimeString(),
-    riskThreshold: '70',
+    riskThreshold: '7',
   });
 
   const [analysisResult, setAnalysisResult] = useState(null);
@@ -180,7 +179,7 @@ export default function AnalyzeTransaction({ forceView }) {
       device_type: 'mobile',
       previous_transactions_count: '5',
       transaction_time: getLocalDateTimeString(),
-      riskThreshold: '70',
+      riskThreshold: '7',
     });
     setAnalysisResult(null);
     setError(null);
@@ -198,8 +197,8 @@ export default function AnalyzeTransaction({ forceView }) {
     o.toLowerCase().includes(locationSearch.toLowerCase())
   );
 
-  // Score display helper
-  const scoreNumber = analysisResult ? Math.round(analysisResult.risk_score * 100) : 87;
+  // Score display helper (1 to 10 scale)
+  const scoreNumber = analysisResult ? Number((analysisResult.risk_score * 10).toFixed(1)) : 8.7;
   const riskLevel = analysisResult?.risk_level || 'HIGH';
   const isFraud = analysisResult?.is_fraud ?? true;
 
@@ -237,17 +236,17 @@ export default function AnalyzeTransaction({ forceView }) {
 
             <div className="flex items-center gap-3">
               <label className="text-xs font-bold text-[#1A1612] whitespace-nowrap">
-                Flag Cutoff: <span className="font-mono text-amber-900 font-extrabold">{formData.riskThreshold}%</span>
+                Flag Cutoff: <span className="font-mono text-amber-900 font-extrabold">{formData.riskThreshold} / 10</span>
               </label>
               <input
                 type="range"
-                min="30"
-                max="90"
-                step="5"
+                min="1"
+                max="10"
+                step="1"
                 value={formData.riskThreshold}
                 onChange={(e) => handleInputChange('riskThreshold', e.target.value)}
                 className="w-32 accent-amber-600 cursor-pointer"
-                title="Adjust Decision Boundary Threshold"
+                title="Adjust Decision Boundary Threshold (1 to 10)"
               />
             </div>
           </div>
@@ -538,13 +537,14 @@ export default function AnalyzeTransaction({ forceView }) {
                   Risk Alert Threshold
                 </label>
                 <span className="text-xs font-mono text-amber-800 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                  {formData.riskThreshold} / 100
+                  {formData.riskThreshold} / 10
                 </span>
               </div>
               <input
                 type="range"
-                min="0"
-                max="100"
+                min="1"
+                max="10"
+                step="1"
                 value={formData.riskThreshold}
                 onChange={(e) => handleInputChange('riskThreshold', e.target.value)}
                 disabled={isViewOnly}
@@ -603,24 +603,24 @@ export default function AnalyzeTransaction({ forceView }) {
                   <div className="text-xs text-[#5C5648] font-bold uppercase tracking-wider">Calibrated Risk Score</div>
                   <div
                     className={`text-4xl font-extrabold mt-1 tracking-tight ${
-                      scoreNumber >= 50
+                      scoreNumber >= 5
                         ? 'text-rose-600'
-                        : scoreNumber >= 20
+                        : scoreNumber >= 2
                         ? 'text-amber-600'
                         : 'text-emerald-600'
                     }`}
                   >
-                    {scoreNumber} <span className="text-lg text-[#8C8270] font-normal">/ 100</span>
+                    {scoreNumber} <span className="text-lg text-[#8C8270] font-normal">/ 10</span>
                   </div>
                   <div className="text-[11px] text-[#8C8270] mt-0.5">
-                    Threshold set at {formData.riskThreshold}
+                    Threshold set at {formData.riskThreshold} / 10
                   </div>
                 </div>
                 <div
                   className={`w-14 h-14 rounded-2xl border flex items-center justify-center shadow-sm ${
-                    scoreNumber >= 50
+                    scoreNumber >= 5
                       ? 'bg-rose-50 border-rose-200 text-rose-600'
-                      : scoreNumber >= 20
+                      : scoreNumber >= 2
                       ? 'bg-amber-50 border-amber-200 text-amber-600'
                       : 'bg-emerald-50 border-emerald-200 text-emerald-600'
                   }`}
@@ -737,9 +737,6 @@ export default function AnalyzeTransaction({ forceView }) {
             </div>
           ) : (
             <div className="bg-white border border-[#E5DCBE] rounded-2xl sm:rounded-3xl p-10 text-center text-[#8C8270] min-h-[360px] flex flex-col items-center justify-center shadow-xl shadow-amber-500/5">
-              <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 mb-3.5">
-                <Sparkles className="w-6 h-6" />
-              </div>
               <p className="text-sm font-bold text-[#1A1612]">No Transaction Evaluated Yet</p>
               <p className="text-xs text-[#5C5648] mt-1 max-w-xs leading-relaxed">
                 Fill in the payload parameters on the left and click "Run Fraud Analysis" to trigger live scoring.

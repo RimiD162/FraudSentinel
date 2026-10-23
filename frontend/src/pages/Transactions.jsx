@@ -62,14 +62,54 @@ export default function Transactions({ forceView }) {
   const [reasoningError, setReasoningError] = useState(null);
 
   const fallbackTransactions = [
-    { id: 'TXN-90214', date: '2023-09-21 14:22', customer: 'Sophia Bennett', channel: 'Mobile App', amount: '$420.00', risk: 88, status: 'Flagged' },
-    { id: 'TXN-90213', date: '2023-09-21 14:18', customer: 'Liam Chen', channel: 'Web POS', amount: '$1,850.00', risk: 74, status: 'Under Review' },
-    { id: 'TXN-90212', date: '2023-09-21 14:05', customer: 'Ava Morales', channel: 'API Direct', amount: '$64.99', risk: 12, status: 'Approved' },
-    { id: 'TXN-90211', date: '2023-09-21 13:54', customer: 'Marcus Vance', channel: 'Mobile App', amount: '$2,100.00', risk: 92, status: 'Declined' },
-    { id: 'TXN-90210', date: '2023-09-21 13:41', customer: 'Emma Watson', channel: 'Web POS', amount: '$312.50', risk: 28, status: 'Approved' },
-    { id: 'TXN-90209', date: '2023-09-21 13:30', customer: 'Noah Miller', channel: 'Mobile App', amount: '$990.00', risk: 65, status: 'Under Review' },
-    { id: 'TXN-90208', date: '2023-09-21 13:12', customer: 'Isabella Ross', channel: 'Web POS', amount: '$45.00', risk: 5, status: 'Approved' },
+    { id: 'TXN-90214', date: 'Sep 21, 2026, 02:22 PM', customer: 'Sophia Bennett', channel: 'Mobile App', amount: '$420.00', risk: 8.8, status: 'Flagged' },
+    { id: 'TXN-90213', date: 'Sep 21, 2026, 02:18 PM', customer: 'Liam Chen', channel: 'Web POS', amount: '$1,850.00', risk: 7.4, status: 'Under Review' },
+    { id: 'TXN-90212', date: 'Sep 21, 2026, 02:05 PM', customer: 'Ava Morales', channel: 'API Direct', amount: '$64.99', risk: 1.2, status: 'Approved' },
+    { id: 'TXN-90211', date: 'Sep 21, 2026, 01:54 PM', customer: 'Marcus Vance', channel: 'Mobile App', amount: '$2,100.00', risk: 9.2, status: 'Declined' },
+    { id: 'TXN-90210', date: 'Sep 21, 2026, 01:41 PM', customer: 'Emma Watson', channel: 'Web POS', amount: '$312.50', risk: 2.8, status: 'Approved' },
+    { id: 'TXN-90209', date: 'Sep 21, 2026, 01:30 PM', customer: 'Noah Miller', channel: 'Mobile App', amount: '$990.00', risk: 6.5, status: 'Under Review' },
+    { id: 'TXN-90208', date: 'Sep 21, 2026, 01:12 PM', customer: 'Isabella Ross', channel: 'Web POS', amount: '$45.00', risk: 0.5, status: 'Approved' },
   ];
+
+  const formatTxDate = (tx) => {
+    const raw = tx.transaction_time || tx.created_at || tx.timestamp || tx.date;
+    if (!raw) return 'Just now';
+    try {
+      const d = new Date(raw);
+      if (isNaN(d.getTime())) return String(raw);
+      return d.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch (e) {
+      return 'Just now';
+    }
+  };
+
+  const parseRiskScore10 = (tx) => {
+    if (typeof tx.risk_score === 'number' && !isNaN(tx.risk_score)) {
+      if (tx.risk_score > 1.0) {
+        return Number((tx.risk_score / 10).toFixed(1));
+      }
+      return Number((tx.risk_score * 10).toFixed(1));
+    }
+    if (typeof tx.fraud_probability === 'number' && !isNaN(tx.fraud_probability)) {
+      return Number((tx.fraud_probability * 10).toFixed(1));
+    }
+    if (typeof tx.risk === 'number' && !isNaN(tx.risk)) {
+      return tx.risk <= 10 ? Number(tx.risk.toFixed(1)) : Number((tx.risk / 10).toFixed(1));
+    }
+    if (tx.is_fraud || tx.status === 'Flagged' || tx.status === 'Declined') {
+      return 8.7;
+    }
+    if (tx.status === 'Under Review') {
+      return 6.4;
+    }
+    return 1.2;
+  };
 
   const fetchTransactionsData = async () => {
     setIsLoading(true);
@@ -90,11 +130,11 @@ export default function Transactions({ forceView }) {
       if (res && res.items) {
         const mapped = res.items.map((tx) => ({
           id: tx.transaction_id || tx.id,
-          date: tx.timestamp ? new Date(tx.timestamp).toLocaleString() : 'Recent',
+          date: formatTxDate(tx),
           customer: tx.customer_name || (tx.customer_id ? `Cust #${tx.customer_id}` : 'Verified Customer'),
-          channel: tx.channel || 'Mobile App',
+          channel: tx.channel || (tx.device_type ? `${tx.device_type.toUpperCase()} Channel` : 'Mobile App'),
           amount: typeof tx.amount === 'number' ? `$${tx.amount.toFixed(2)}` : tx.amount || '$0.00',
-          risk: Math.round((tx.risk_score || tx.fraud_probability || 0) * (tx.risk_score > 1 ? 1 : 100)),
+          risk: parseRiskScore10(tx),
           status: tx.status || (tx.is_fraud ? 'Flagged' : 'Approved'),
           raw: tx,
         }));
@@ -104,12 +144,12 @@ export default function Transactions({ forceView }) {
       } else if (Array.isArray(res)) {
         const mapped = res.map((tx) => ({
           id: tx.transaction_id || tx.id,
-          date: tx.timestamp ? new Date(tx.timestamp).toLocaleString() : 'Recent',
+          date: formatTxDate(tx),
           customer: tx.customer_name || `Cust #${tx.customer_id || '901'}`,
-          channel: tx.channel || 'Mobile App',
+          channel: tx.channel || (tx.device_type ? `${tx.device_type.toUpperCase()} Channel` : 'Mobile App'),
           amount: typeof tx.amount === 'number' ? `$${tx.amount.toFixed(2)}` : tx.amount || '$0.00',
-          risk: Math.round((tx.risk_score || 0) * (tx.risk_score > 1 ? 1 : 100)),
-          status: tx.status || 'Approved',
+          risk: parseRiskScore10(tx),
+          status: tx.status || (tx.is_fraud ? 'Flagged' : 'Approved'),
           raw: tx,
         }));
         setTransactions(mapped);
@@ -417,9 +457,9 @@ export default function Transactions({ forceView }) {
                     </td>
                     <td className="py-3.5 px-6">
                       <span className={`font-mono text-xs font-bold ${
-                        tx.risk > 70 ? 'text-rose-600' : tx.risk > 40 ? 'text-amber-600' : 'text-emerald-600'
+                        tx.risk >= 7 ? 'text-rose-600' : tx.risk >= 4 ? 'text-amber-600' : 'text-emerald-600'
                       }`}>
-                        {tx.risk}/100
+                        {tx.risk}/10
                       </span>
                     </td>
                     <td className="py-3.5 px-6">
@@ -596,9 +636,9 @@ export default function Transactions({ forceView }) {
               <div className="p-3 rounded-2xl bg-[#FCFAF5] border border-[#EBE3D0]">
                 <div className="text-[11px] text-[#8C8270] font-bold uppercase">Risk Score</div>
                 <div className={`text-base font-mono font-bold mt-0.5 ${
-                  selectedTx.risk > 70 ? 'text-rose-600' : selectedTx.risk > 40 ? 'text-amber-600' : 'text-emerald-600'
+                  selectedTx.risk >= 7 ? 'text-rose-600' : selectedTx.risk >= 4 ? 'text-amber-600' : 'text-emerald-600'
                 }`}>
-                  {selectedTx.risk}/100
+                  {selectedTx.risk}/10
                 </div>
               </div>
               <div className="p-3 rounded-2xl bg-[#FCFAF5] border border-[#EBE3D0]">

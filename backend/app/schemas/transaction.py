@@ -107,6 +107,8 @@ class TransactionResponse(TransactionBase):
 
     is_fraud: bool
     created_at: datetime
+    risk_score: Optional[float] = Field(None, description="Consolidated risk score (0.0 to 1.0)")
+    status: Optional[str] = Field(None, description="Transaction status")
 
     model_config = {"from_attributes": True}
 
