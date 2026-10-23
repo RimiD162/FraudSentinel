@@ -35,8 +35,14 @@ export default function DashboardLayout() {
     return <Navigate to="/login/user" state={{ from: location }} replace />;
   }
 
-  const pathLabel =
-    location.pathname.replace('/dashboard/', '').replace('/dashboard', 'Overview') || 'Overview';
+  const formatPathLabel = (path) => {
+    const clean = path.replace('/dashboard/', '').replace('/dashboard', '').trim();
+    if (!clean || clean === 'Overview') return 'Overview';
+    if (clean === 'user') return 'User Dashboard';
+    if (clean === 'admin') return 'Admin Dashboard';
+    return clean.replace(/([A-Z])/g, ' $1');
+  };
+  const pathLabel = formatPathLabel(location.pathname);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#FAFAF8] via-[#FCFAF5] to-[#F5EFE0] text-[#1A1612] flex font-sans selection:bg-amber-400/30 selection:text-amber-950">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink, Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Cpu,
@@ -8,55 +8,63 @@ import {
   TrendingUp,
   BarChart3,
   Shield,
+  Users,
 } from 'lucide-react';
 import { useRole } from '../context/RoleContext.jsx';
 
 /**
  * Navigation Items Registry
- * Defines all 8 sections mapped to their respective permission keys and paths.
+ * Defines all sections mapped to their respective permission keys and paths.
  */
 const NAV_ITEMS = [
   {
     id: 'dashboard',
     permissionKey: 'dashboard',
     label: 'Dashboard',
-    path: '/dashboard',
+    basePath: '/dashboard',
     icon: LayoutDashboard,
   },
   {
     id: 'analyze',
     permissionKey: 'analyzeTransaction',
     label: 'Analyze Transaction',
-    path: '/dashboard/analyze',
+    basePath: '/analyze',
     icon: Cpu,
   },
   {
     id: 'transactions',
     permissionKey: 'transactions',
     label: 'Transactions',
-    path: '/dashboard/transactions',
+    basePath: '/transactions',
     icon: CreditCard,
   },
   {
     id: 'alerts',
     permissionKey: 'fraudAlerts',
     label: 'Fraud Alerts',
-    path: '/dashboard/alerts',
+    basePath: '/alerts',
     icon: Bell,
   },
   {
     id: 'analytics',
     permissionKey: 'analytics',
     label: 'Analytics',
-    path: '/dashboard/analytics',
+    basePath: '/analytics',
     icon: TrendingUp,
   },
   {
     id: 'reports',
     permissionKey: 'reports',
     label: 'Reports',
-    path: '/dashboard/reports',
+    basePath: '/reports',
     icon: BarChart3,
+  },
+  {
+    id: 'users',
+    permissionKey: 'userManagement',
+    label: 'User Management',
+    basePath: '/users',
+    icon: Users,
   },
 ];
 
@@ -66,12 +74,71 @@ const NAV_ITEMS = [
  * Reads permission matrix to dynamically filter navigation items based on current role.
  */
 export default function Sidebar() {
-  const { getPermission } = useRole();
+  const { role, currentUser, getPermission } = useRole();
+  const location = useLocation();
+  const isExplicitUser = location.pathname.endsWith('/user');
+  const isExplicitAdmin = location.pathname.endsWith('/admin');
+  const isAdmin = isExplicitAdmin || (!isExplicitUser && (role || currentUser?.role || '').toLowerCase() === 'admin');
+  const roleSegment = isAdmin ? 'admin' : 'user';
 
-  // Filter items dynamically using centralized permission table
-  const visibleNavItems = NAV_ITEMS.filter(
-    (item) => getPermission(item.permissionKey) !== 'hidden'
-  );
+  // Filter items dynamically using centralized permission table and assign dedicated paths like /analyze/user
+  const visibleNavItems = NAV_ITEMS
+    .filter((item) => getPermission(item.permissionKey) !== 'hidden')
+    .map((item) => {
+      if (item.id === 'dashboard') {
+        return {
+          ...item,
+          path: `/dashboard/${roleSegment}`,
+          label: isAdmin ? 'Admin Dashboard' : 'User Dashboard',
+        };
+      }
+      if (item.id === 'analyze') {
+        return {
+          ...item,
+          path: `/analyze/${roleSegment}`,
+          label: isAdmin ? 'Model Calibration' : 'Analyze Transaction',
+        };
+      }
+      if (item.id === 'transactions') {
+        return {
+          ...item,
+          path: `/transactions/${roleSegment}`,
+          label: isAdmin ? 'Audit Ledger' : 'Transactions',
+        };
+      }
+      if (item.id === 'alerts') {
+        return {
+          ...item,
+          path: `/alerts/${roleSegment}`,
+          label: isAdmin ? 'Threat Ops & Alerts' : 'Fraud Alerts',
+        };
+      }
+      if (item.id === 'analytics') {
+        return {
+          ...item,
+          path: `/analytics/${roleSegment}`,
+          label: isAdmin ? 'Executive Telemetry' : 'Analytics',
+        };
+      }
+      if (item.id === 'reports') {
+        return {
+          ...item,
+          path: `/reports/${roleSegment}`,
+          label: isAdmin ? 'Regulatory & SAR' : 'Reports',
+        };
+      }
+      if (item.id === 'users') {
+        return {
+          ...item,
+          path: `/users/admin`,
+          label: 'User Management',
+        };
+      }
+      return {
+        ...item,
+        path: `${item.basePath}/${roleSegment}`,
+      };
+    });
 
   return (
     <aside

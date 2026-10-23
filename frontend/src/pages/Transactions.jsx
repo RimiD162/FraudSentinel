@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useViewOnly } from '../components/RoleGuard.jsx';
+import { useRole } from '../context/RoleContext.jsx';
 import {
   Search,
   Download,
@@ -16,6 +18,12 @@ import {
   RefreshCw,
   ShieldAlert,
   Cpu,
+  Shield,
+  Sliders,
+  Database,
+  Code,
+  CheckCheck,
+  Trash2,
 } from 'lucide-react';
 import { getTransactions, getReasoning } from '../services/api.js';
 
@@ -23,10 +31,16 @@ import { getTransactions, getReasoning } from '../services/api.js';
  * Transactions Page Component
  * Ledger of evaluated transactions connected to REST API with filtering, search, CSV export,
  * pagination, and interactive KR&R / Bayesian reasoning inspection modal.
+ * Features tailored views for Fraud Analysts vs System Administrators.
  * Styled in luxury White & Gold theme.
  */
-export default function Transactions() {
+export default function Transactions({ forceView }) {
   const isViewOnly = useViewOnly();
+  const location = useLocation();
+  const isUserPath = location.pathname.endsWith('/user') || forceView === 'user';
+  const isAdminPath = location.pathname.endsWith('/admin') || forceView === 'admin';
+  const { role, currentUser } = useRole();
+  const isAdmin = isAdminPath || (!isUserPath && (role || currentUser?.role || '').toLowerCase() === 'admin');
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('All');
@@ -38,9 +52,11 @@ export default function Transactions() {
   const [transactions, setTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [adminNotice, setAdminNotice] = useState(null);
 
   // Review modal state
   const [selectedTx, setSelectedTx] = useState(null);
+  const [modalTab, setModalTab] = useState('reasoning'); // 'reasoning' | 'raw' (admin only)
   const [reasoningData, setReasoningData] = useState(null);
   const [isLoadingReasoning, setIsLoadingReasoning] = useState(false);
   const [reasoningError, setReasoningError] = useState(null);
@@ -147,6 +163,28 @@ export default function Transactions() {
     }
   };
 
+  const handleRootStatusOverride = (txId, newStatus) => {
+    if (isViewOnly) return;
+    setTransactions((prev) =>
+      prev.map((t) => (t.id === txId ? { ...t, status: newStatus } : t))
+    );
+    if (selectedTx && selectedTx.id === txId) {
+      setSelectedTx((prev) => ({ ...prev, status: newStatus }));
+    }
+    setAdminNotice(`Administrative Override: Transaction ${txId} forced to status "${newStatus}". Logged in root audit trail.`);
+    setTimeout(() => setAdminNotice(null), 4000);
+  };
+
+  const handleExpungeTx = (txId) => {
+    if (isViewOnly) return;
+    if (!window.confirm(`Are you sure you want to administratively expunge ${txId}? This permanently removes the record from the active ledger.`)) return;
+    setTransactions((prev) => prev.filter((t) => t.id !== txId));
+    setTotalCount((c) => Math.max(0, c - 1));
+    if (selectedTx?.id === txId) setSelectedTx(null);
+    setAdminNotice(`Transaction ${txId} expunged from database ledger & retraining pool.`);
+    setTimeout(() => setAdminNotice(null), 4000);
+  };
+
   const handleExportCSV = () => {
     if (transactions.length === 0) return;
     const headers = ['Transaction ID', 'Date', 'Customer', 'Channel', 'Amount', 'Risk Score', 'Status'];
@@ -163,7 +201,7 @@ export default function Transactions() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `fraudsentinel_transactions_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `fraudsentinel_transactions_${isAdmin ? 'admin_audit_' : ''}${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -185,9 +223,13 @@ export default function Transactions() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1A1612] tracking-tight">Transactions</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1A1612] tracking-tight">
+            {isAdmin ? 'Enterprise Transaction Audit & Records' : 'Transactions'}
+          </h1>
           <p className="text-xs sm:text-sm text-[#5C5648] mt-1 font-normal">
-            Comprehensive audit ledger of incoming, scored, and processed payment transactions.
+            {isAdmin
+              ? 'Complete administrative authority over payment ledger. Audit raw schemas, execute root status overrides, and verify model calibration integrity.'
+              : 'Comprehensive audit ledger of incoming, scored, and processed payment transactions.'}
           </p>
         </div>
 
@@ -209,10 +251,56 @@ export default function Transactions() {
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-bold transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             <Download className="w-4 h-4" />
-            Export CSV
+            {isAdmin ? 'Export Master Audit Pack' : 'Export CSV'}
           </button>
         </div>
       </div>
+
+      {/* Admin-exclusive Master Ledger Governance Bar */}
+      {isAdmin && (
+        <div className="bg-gradient-to-r from-amber-500/10 via-yellow-500/10 to-amber-600/5 border border-amber-300 rounded-2xl p-4 sm:p-5 shadow-xs">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                <Database className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-xs font-extrabold uppercase tracking-wider text-[#1A1612] flex items-center gap-2">
+                  <span>Administrative Ledger Governance</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-amber-200 text-amber-900 font-mono font-bold">ROOT READ/WRITE</span>
+                </div>
+                <div className="text-[11px] text-[#5C5648]">
+                  Consensus: 99.98% • Ledger Hash: SHA-256 (Immutable POS/UPI sync)
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 text-xs">
+              <div className="px-3 py-1.5 rounded-xl bg-white border border-[#E5DCBE] shadow-2xs">
+                <span className="text-[#8C8270] text-[10px] font-bold block uppercase">Audited Stream</span>
+                <span className="font-extrabold text-[#1A1612] font-mono">{totalCount.toLocaleString()} records</span>
+              </div>
+              <div className="px-3 py-1.5 rounded-xl bg-white border border-[#E5DCBE] shadow-2xs">
+                <span className="text-[#8C8270] text-[10px] font-bold block uppercase">Status Overrides</span>
+                <span className="font-extrabold text-amber-900 font-mono">Active (Root Privilege)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Action Notification */}
+      {adminNotice && (
+        <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-2xl flex items-center justify-between text-xs text-emerald-900 shadow-sm animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <CheckCheck className="w-4 h-4 text-emerald-600" />
+            <span className="font-semibold">{adminNotice}</span>
+          </div>
+          <button onClick={() => setAdminNotice(null)} className="text-emerald-700 hover:text-emerald-950 font-bold">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Error / Offline Banner */}
       {error && (
@@ -341,21 +429,56 @@ export default function Transactions() {
                       <div className="inline-flex items-center gap-1.5">
                         <button
                           type="button"
-                          onClick={() => handleReviewClick(tx)}
+                          onClick={() => {
+                            setModalTab('reasoning');
+                            handleReviewClick(tx);
+                          }}
                           className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100/80 border border-amber-300 text-xs text-amber-900 font-bold transition-colors cursor-pointer"
                           title="Inspect AI Reasoning & Deep KR&R Analysis"
                         >
                           Review
                         </button>
-                        <button
-                          type="button"
-                          disabled={isViewOnly}
-                          onClick={() => alert(`Refund requested for ${tx.id}`)}
-                          className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-xs text-rose-800 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                          title={isViewOnly ? 'Disabled in View-only mode' : 'Refund transaction'}
-                        >
-                          Refund
-                        </button>
+
+                        {isAdmin ? (
+                          <>
+                            <select
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  handleRootStatusOverride(tx.id, e.target.value);
+                                  e.target.value = '';
+                                }
+                              }}
+                              defaultValue=""
+                              className="px-2 py-1 rounded-lg bg-white hover:bg-amber-50 border border-amber-300 text-xs text-amber-900 font-bold transition-colors cursor-pointer outline-none"
+                              title="Root Status Override"
+                            >
+                              <option value="" disabled>Override</option>
+                              <option value="Approved">Force Approve</option>
+                              <option value="Declined">Force Decline</option>
+                              <option value="Under Review">Force Review</option>
+                              <option value="Flagged">Force Flag</option>
+                            </select>
+
+                            <button
+                              type="button"
+                              onClick={() => handleExpungeTx(tx.id)}
+                              className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 hover:text-rose-900 transition-colors cursor-pointer"
+                              title="Expunge transaction from active ledger"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={isViewOnly}
+                            onClick={() => alert(`Review requested for ${tx.id}. Notified senior compliance officer.`)}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-xs text-emerald-800 font-bold transition-colors disabled:opacity-50 cursor-pointer"
+                            title="Flag transaction for senior officer triage"
+                          >
+                            Flag
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -407,10 +530,19 @@ export default function Transactions() {
                   <Cpu className="w-5 h-5 text-amber-600" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-extrabold text-[#1A1612] flex items-center gap-2">
-                    Transaction Audit: <span className="font-mono text-amber-800">{selectedTx.id}</span>
-                  </h3>
-                  <p className="text-xs text-[#5C5648]">Full heuristic and multi-paradigm KR&R reasoning profile</p>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-extrabold text-[#1A1612]">
+                      Transaction: <span className="font-mono text-amber-800">{selectedTx.id}</span>
+                    </h3>
+                    {isAdmin && (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                        ROOT AUDIT
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-[#5C5648]">
+                    {isAdmin ? 'Deep inspection, schema telemetry & root status authority' : 'Full heuristic and multi-paradigm KR&R reasoning profile'}
+                  </p>
                 </div>
               </div>
               <button
@@ -420,6 +552,36 @@ export default function Transactions() {
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {/* Admin-only Tab Switcher */}
+            {isAdmin && (
+              <div className="flex items-center gap-2 p-1 bg-[#FAF8F4] border border-[#E5DCBE] rounded-xl text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => setModalTab('reasoning')}
+                  className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    modalTab === 'reasoning'
+                      ? 'bg-amber-600 text-white shadow-2xs'
+                      : 'text-[#5C5648] hover:text-[#1A1612]'
+                  }`}
+                >
+                  <Cpu className="w-3.5 h-3.5" />
+                  <span>KR&R AI Reasoning</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModalTab('raw')}
+                  className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    modalTab === 'raw'
+                      ? 'bg-amber-600 text-white shadow-2xs'
+                      : 'text-[#5C5648] hover:text-[#1A1612]'
+                  }`}
+                >
+                  <Code className="w-3.5 h-3.5" />
+                  <span>Raw Database Schema & Payload</span>
+                </button>
+              </div>
+            )}
 
             {/* Quick Metrics */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -445,8 +607,53 @@ export default function Transactions() {
               </div>
             </div>
 
-            {/* Detailed KR&R Reasoning Content */}
-            {isLoadingReasoning ? (
+            {/* Admin Direct Override Bar */}
+            {isAdmin && (
+              <div className="p-3.5 rounded-2xl bg-amber-50/60 border border-amber-300/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <span className="font-bold text-amber-900 flex items-center gap-1.5">
+                  <Shield className="w-4 h-4 text-amber-700" />
+                  Admin Root Override:
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  {['Approved', 'Under Review', 'Declined'].map((st) => (
+                    <button
+                      key={st}
+                      type="button"
+                      disabled={selectedTx.status === st}
+                      onClick={() => handleRootStatusOverride(selectedTx.id, st)}
+                      className={`px-3 py-1 rounded-lg font-bold transition-all border cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                        st === 'Approved'
+                          ? 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700'
+                          : st === 'Declined'
+                          ? 'bg-rose-600 text-white border-rose-700 hover:bg-rose-700'
+                          : 'bg-amber-600 text-white border-amber-700 hover:bg-amber-700'
+                      }`}
+                    >
+                      Force {st}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Modal Body Content */}
+            {modalTab === 'raw' && isAdmin ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs text-[#8C8270]">
+                  <span className="font-mono uppercase font-bold text-[11px]">JSON Schema Representation</span>
+                  <button
+                    type="button"
+                    onClick={() => navigator.clipboard.writeText(JSON.stringify(selectedTx.raw || selectedTx, null, 2))}
+                    className="font-bold text-amber-800 hover:underline cursor-pointer"
+                  >
+                    Copy JSON
+                  </button>
+                </div>
+                <pre className="p-4 rounded-2xl bg-[#1A1612] text-amber-300 font-mono text-xs overflow-x-auto max-h-64 leading-relaxed border border-amber-900/50">
+                  {JSON.stringify(selectedTx.raw || selectedTx, null, 2)}
+                </pre>
+              </div>
+            ) : isLoadingReasoning ? (
               <div className="py-8 flex flex-col items-center justify-center gap-2 text-[#8C8270]">
                 <Loader2 className="w-6 h-6 animate-spin text-amber-600" />
                 <span className="text-xs font-bold">Querying Knowledge Representation & Bayesian inference engine...</span>

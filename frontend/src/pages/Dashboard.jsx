@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import StatCard from '../components/StatCard.jsx';
-import TransactionVolumeChart from '../components/TransactionVolumeChart.jsx';
-import FraudulentTransactionsChart from '../components/FraudulentTransactionsChart.jsx';
-import FraudAlertsTable from '../components/FraudAlertsTable.jsx';
+import { useLocation, useNavigate, Navigate } from 'react-router-dom';
+import { useRole } from '../context/RoleContext.jsx';
+import UserDashboardView from '../components/UserDashboardView.jsx';
+import AdminDashboardView from '../components/AdminDashboardView.jsx';
 import {
   stats as defaultStats,
   transactionVolume as defaultVolume,
@@ -12,17 +12,46 @@ import {
 import { getAnalyticsSummary, getAnalyticsTrends, getAlerts } from '../services/api.js';
 
 /**
- * Dashboard Page Component
- * Main analytical dashboard view displaying real-time metrics, volume trends,
- * and ML fraud alert records styled in luxury White & Gold.
+ * Main Dashboard Entry Point Component
+ * Dynamically routes to / handles:
+ * - `/dashboard/admin`: Executive Admin Control Center
+ * - `/dashboard/user`: Fraud Analyst Operational Terminal
+ * - `/dashboard`: Automatically redirects to the user's role-assigned dashboard.
  */
-export default function Dashboard() {
+export default function Dashboard({ forceView }) {
+  const { role, currentUser } = useRole();
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const [statsData, setStatsData] = useState(defaultStats);
   const [volumeData, setVolumeData] = useState(defaultVolume);
   const [fraudData, setFraudData] = useState(defaultFraud);
   const [alertsData, setAlertsData] = useState(defaultAlerts);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+
+  // Check if current user has administrator role
+  const userRole = (role || currentUser?.role || 'analyst').toLowerCase();
+  const userIsAdmin = userRole === 'admin';
+
+  // Determine active view: explicit prop, URL route, or role fallback
+  let activeView = forceView;
+  if (!activeView) {
+    if (location.pathname.endsWith('/admin')) {
+      activeView = 'admin';
+    } else if (location.pathname.endsWith('/user')) {
+      activeView = 'user';
+    } else {
+      activeView = userIsAdmin ? 'admin' : 'user';
+    }
+  }
+
+  // Automatic redirect if visiting root /dashboard
+  useEffect(() => {
+    const isRootDashboard = location.pathname === '/dashboard' || location.pathname === '/dashboard/';
+    if (isRootDashboard) {
+      navigate(userIsAdmin ? '/dashboard/admin' : '/dashboard/user', { replace: true });
+    }
+  }, [location.pathname, userIsAdmin, navigate]);
 
   useEffect(() => {
     let isMounted = true;
@@ -79,7 +108,7 @@ export default function Dashboard() {
         // 2. Process Trends for Charts
         if (trends.status === 'fulfilled' && trends.value?.trends?.length) {
           const rawTrends = trends.value.trends;
-          const recentTrends = rawTrends.slice(-7); // Last 7 data points
+          const recentTrends = rawTrends.slice(-7);
 
           const volChartData = recentTrends.map((t) => ({
             time: t.date ? t.date.slice(5) : 'Day',
@@ -177,63 +206,32 @@ export default function Dashboard() {
     };
   }, []);
 
+  // Strict RBAC: Non-admin users cannot access the /dashboard/admin route
+  if (activeView === 'admin' && !userIsAdmin) {
+    return <Navigate to="/dashboard/user" replace />;
+  }
+
+  if (activeView === 'admin') {
+    return (
+      <AdminDashboardView
+        currentUser={currentUser}
+        statsData={statsData}
+        volumeData={volumeData}
+        fraudData={fraudData}
+        alertsData={alertsData}
+        loading={loading}
+      />
+    );
+  }
+
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1A1612] tracking-tight">
-            Dashboard Overview
-          </h1>
-          <p className="text-xs sm:text-sm text-[#5C5648] mt-1 font-normal">
-            Real-time transaction telemetry, risk probability scoring, and automated ML inference.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {loading && (
-            <span className="text-xs text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 font-mono animate-pulse">
-              Syncing live telemetry...
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* 1. Stat Cards Row */}
-      <section aria-label="Key Performance Indicators">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
-          {statsData.map((item) => (
-            <StatCard
-              key={item.id}
-              label={item.label}
-              value={item.value}
-              delta={item.delta}
-              isPositive={item.isPositive}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* 2. Real-time Transaction Monitoring Section */}
-      <section aria-labelledby="realtime-monitoring-heading">
-        <div className="flex items-center justify-between mb-4">
-          <h2
-            id="realtime-monitoring-heading"
-            className="text-lg sm:text-xl font-extrabold text-[#1A1612] tracking-tight"
-          >
-            Real-time Transaction Monitoring
-          </h2>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
-          <TransactionVolumeChart volumeData={volumeData} />
-          <FraudulentTransactionsChart fraudData={fraudData} />
-        </div>
-      </section>
-
-      {/* 3. Machine Learning Fraud Alerts Section */}
-      <section aria-labelledby="ml-fraud-alerts-heading">
-        <FraudAlertsTable alerts={alertsData} />
-      </section>
-    </div>
+    <UserDashboardView
+      currentUser={currentUser}
+      statsData={statsData}
+      volumeData={volumeData}
+      fraudData={fraudData}
+      alertsData={alertsData}
+      loading={loading}
+    />
   );
 }

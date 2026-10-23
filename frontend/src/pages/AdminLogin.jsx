@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
-  ShieldAlert,
   ShieldCheck,
   Mail,
   ArrowRight,
@@ -16,7 +15,7 @@ import {
   User,
   Key,
 } from 'lucide-react';
-import { useRole, ROLE_CREDENTIALS } from '../context/RoleContext.jsx';
+import { useRole } from '../context/RoleContext.jsx';
 
 /**
  * System Administrator Authentication & Provisioning Portal (Route: `/login/admin` or `/admin/login`)
@@ -25,13 +24,14 @@ import { useRole, ROLE_CREDENTIALS } from '../context/RoleContext.jsx';
  */
 export default function AdminLogin() {
   const navigate = useNavigate();
-  const { loginWithCredentials, registerWithCredentials, isSupabaseConfigured, apiStatus } = useRole();
+  const { loginWithCredentials, registerWithCredentials, isSupabaseConfigured, apiStatus, currentUser, role } = useRole();
 
-  const adminCreds = ROLE_CREDENTIALS.admin || {
-    email: 'admin@fraudsentinel.com',
-    password: 'admin123',
-    name: 'System Administrator',
-  };
+  React.useEffect(() => {
+    if (currentUser && (role === 'admin' || currentUser.role === 'admin')) {
+      navigate('/dashboard/admin');
+    }
+  }, [currentUser, role, navigate]);
+
 
   const [authMode, setAuthMode] = useState('signin'); // 'signin' | 'signup'
   const [fullName, setFullName] = useState('');
@@ -43,7 +43,6 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
-  const [rememberStation, setRememberStation] = useState(true);
 
   // Switch between Sign In and Sign Up modes
   const handleModeSwitch = (mode) => {
@@ -85,7 +84,7 @@ export default function AdminLogin() {
         } else {
           setSuccessMessage('Administrator account provisioned successfully! Launching Admin Console...');
           setTimeout(() => {
-            navigate('/dashboard');
+            navigate('/dashboard/admin');
           }, 500);
         }
       } catch (err) {
@@ -116,7 +115,7 @@ export default function AdminLogin() {
 
         setSuccessMessage('Administrator credentials verified. Launching Admin Console...');
         setTimeout(() => {
-          navigate('/dashboard');
+          navigate('/dashboard/admin');
         }, 500);
       } catch (err) {
         setErrorMessage(err.message || 'Administrator authentication failed. Access rejected.');
@@ -124,13 +123,6 @@ export default function AdminLogin() {
         setLoading(false);
       }
     }
-  };
-
-
-  const handleAutofillAdmin = () => {
-    setEmail(adminCreds.email);
-    setPassword(adminCreds.password);
-    setErrorMessage(null);
   };
 
   return (
@@ -177,20 +169,6 @@ export default function AdminLogin() {
           <div className="relative z-10">
             {/* Header Title & Admin Security Badge */}
             <div className="mb-6 text-center sm:text-left">
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-amber-100 to-yellow-100 border border-amber-300 text-amber-900 text-xs font-bold shadow-xs">
-                  <ShieldAlert className="w-3.5 h-3.5 text-amber-700" />
-                  <span>Restricted • System Administrator Only</span>
-                </div>
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                  isSupabaseConfigured
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                    : 'bg-amber-50 text-amber-900 border-amber-200'
-                }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${isSupabaseConfigured ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-                  {isSupabaseConfigured ? '⚡ Supabase Auth' : '⚡ Local / Seed Auth'}
-                </span>
-              </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1A1612] tracking-tight">
                 {authMode === 'signin' ? 'Admin Console Access' : 'Provision Admin Account'}
               </h1>
@@ -267,20 +245,9 @@ export default function AdminLogin() {
 
               {/* Master Password Field */}
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-bold text-[#1A1612] uppercase tracking-wider">
-                    {authMode === 'signup' ? 'Master Password' : 'Master Password / Security Key'}
-                  </label>
-                  {authMode === 'signin' && (
-                    <button
-                      type="button"
-                      onClick={handleAutofillAdmin}
-                      className="text-[11px] font-bold text-amber-700 hover:text-amber-900 hover:underline cursor-pointer"
-                    >
-                      Auto-Fill Demo Admin
-                    </button>
-                  )}
-                </div>
+                <label className="block text-xs font-bold text-[#1A1612] uppercase tracking-wider mb-1.5">
+                  {authMode === 'signup' ? 'Master Password' : 'Master Password / Security Key'}
+                </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
                     <KeyRound className="w-4 h-4 text-amber-600" />
@@ -326,52 +293,6 @@ export default function AdminLogin() {
                 </div>
               )}
 
-              {/* Station Security & System Live State */}
-              <div className="flex items-center justify-between pt-1 text-xs">
-                <label className="flex items-center gap-2 text-[#5C5648] cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={rememberStation}
-                    onChange={(e) => setRememberStation(e.target.checked)}
-                    className="w-4 h-4 rounded border-[#E5DCBE] text-amber-600 focus:ring-amber-400"
-                  />
-                  <span>Trusted Admin Workstation</span>
-                </label>
-
-                <div className="flex items-center gap-1.5 text-[11px] font-mono font-semibold">
-                  <span className={`w-2 h-2 rounded-full ${apiStatus === 'online' ? 'bg-emerald-500' : 'bg-amber-400'}`}></span>
-                  <span className="text-[#6B6454]">
-                    {apiStatus === 'online' ? 'Cluster Active' : 'Cluster Ready'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Quick Seed Credentials autofill helper */}
-
-              <div className="flex items-center justify-between text-xs py-1 px-1 bg-amber-50/50 rounded-lg border border-amber-200/50">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail(adminCreds.email);
-                    setPassword(adminCreds.password);
-                  }}
-                  className="text-amber-800 hover:text-amber-950 font-semibold hover:underline cursor-pointer flex items-center gap-1"
-                >
-                  <span>⚡ Quick fill seed admin credentials</span>
-                </button>
-                {(email || password) && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmail('');
-                      setPassword('');
-                    }}
-                    className="text-[#8C8270] hover:text-[#1A1612] cursor-pointer"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
 
               {/* Submit Admin Button */}
               <div className="pt-2">
@@ -439,10 +360,6 @@ export default function AdminLogin() {
         </div>
       </main>
 
-      {/* Formal Footer */}
-      <footer className="py-4 text-center text-xs text-[#8C8270]">
-        © 2026 FraudSentinel Inc. • High-Assurance Root Authentication • Strict Zero-Trust Enforced
-      </footer>
 
     </div>
   );

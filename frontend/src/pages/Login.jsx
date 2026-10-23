@@ -12,7 +12,7 @@ import {
   User,
   CheckCircle2,
 } from 'lucide-react';
-import { useRole, ROLE_CREDENTIALS } from '../context/RoleContext.jsx';
+import { useRole } from '../context/RoleContext.jsx';
 
 /**
  * Enterprise User Authentication Page Component (Route: `/login/user` or `/auth`)
@@ -22,11 +22,6 @@ export default function Login() {
   const navigate = useNavigate();
   const { loginWithCredentials, registerWithCredentials, isSupabaseConfigured, apiStatus, currentUser } = useRole();
 
-  const analystCreds = ROLE_CREDENTIALS.analyst || {
-    email: 'analyst@fraudsentinel.com',
-    password: 'analyst123',
-    name: 'Lead Fraud Analyst',
-  };
 
   const [authMode, setAuthMode] = useState('signin'); // 'signin' | 'signup'
   const [fullName, setFullName] = useState('');
@@ -37,11 +32,10 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
-  const [rememberMe, setRememberMe] = useState(true);
 
   React.useEffect(() => {
     if (currentUser) {
-      navigate('/dashboard');
+      navigate('/dashboard/user');
     }
   }, [currentUser, navigate]);
 
@@ -83,7 +77,7 @@ export default function Login() {
         if (res?.status === 'confirmation_required') {
           setSuccessMessage(res.message);
         } else {
-          navigate('/dashboard');
+          navigate('/dashboard/user');
         }
       } catch (err) {
         setErrorMessage(err.message || 'Registration failed. Please try again.');
@@ -100,7 +94,7 @@ export default function Login() {
       setLoading(true);
       try {
         await loginWithCredentials(email.trim(), password);
-        navigate('/dashboard');
+        navigate('/dashboard/user');
       } catch (err) {
         setErrorMessage(err.message || 'Authentication failed. Please verify your credentials.');
       } finally {
@@ -143,17 +137,6 @@ export default function Login() {
           <div className="relative z-10">
             {/* Header Title */}
             <div className="mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                  isSupabaseConfigured
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                    : 'bg-amber-50 text-amber-900 border-amber-200'
-                }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${isSupabaseConfigured ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-                  {isSupabaseConfigured ? '⚡ Supabase Auth' : '⚡ Local / Seed Auth'}
-                </span>
-                <span className="text-[11px] text-[#8C8270] font-medium">Enterprise Portal</span>
-              </div>
 
               <h1 className="text-2xl font-extrabold text-[#1A1612] tracking-tight">
                 {authMode === 'signin' ? 'Sign in to User Portal' : 'Create a User Account'}
@@ -279,52 +262,6 @@ export default function Login() {
                 </div>
               )}
 
-              {/* Remember Me & Status */}
-              <div className="flex items-center justify-between pt-1 text-xs">
-                <label className="flex items-center gap-2 text-[#5C5648] cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded border-[#E5DCBE] text-amber-600 focus:ring-amber-400"
-                  />
-                  <span>Remember this device</span>
-                </label>
-
-                <div className="flex items-center gap-1.5 text-[11px] font-mono font-semibold">
-                  <span className={`w-2 h-2 rounded-full ${apiStatus === 'online' ? 'bg-emerald-500' : 'bg-amber-400'}`}></span>
-                  <span className="text-[#6B6454]">
-                    {apiStatus === 'online' ? 'System Live' : 'System Ready'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Quick Seed Credentials autofill helper */}
-
-              <div className="flex items-center justify-between text-xs py-1 px-1 bg-amber-50/50 rounded-lg border border-amber-200/50">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail('analyst@fraudsentinel.com');
-                    setPassword('analyst123');
-                  }}
-                  className="text-amber-800 hover:text-amber-950 font-semibold hover:underline cursor-pointer flex items-center gap-1"
-                >
-                  <span>⚡ Quick fill seed test credentials</span>
-                </button>
-                {(email || password) && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmail('');
-                      setPassword('');
-                    }}
-                    className="text-[#8C8270] hover:text-[#1A1612] cursor-pointer"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
 
               {/* Submit Action */}
               <div className="pt-2">
@@ -375,15 +312,6 @@ export default function Login() {
                     </span>
                   )}
                 </div>
-
-                <div className="pt-2 border-t border-[#F2ECE0]">
-                  <Link
-                    to="/login/admin"
-                    className="inline-flex items-center gap-1 font-bold text-amber-800 hover:text-amber-950 transition-colors"
-                  >
-                    <span>System Administrator Portal →</span>
-                  </Link>
-                </div>
               </div>
 
             </form>
@@ -391,10 +319,6 @@ export default function Login() {
         </div>
       </main>
 
-      {/* Formal Footer */}
-      <footer className="py-4 text-center text-xs text-[#8C8270]">
-        © 2026 FraudSentinel Inc. All rights reserved. • Enterprise Fraud Intelligence
-      </footer>
 
     </div>
   );

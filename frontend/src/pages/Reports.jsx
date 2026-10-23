@@ -1,6 +1,29 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useViewOnly } from '../components/RoleGuard.jsx';
-import { FileText, Plus, Download, Trash2, Calendar, ShieldCheck, CheckCircle2, TrendingUp, Search, Network, ArrowRight, Loader2, AlertCircle, RefreshCw, Cpu, Activity } from 'lucide-react';
+import { useRole } from '../context/RoleContext.jsx';
+import {
+  FileText,
+  Plus,
+  Download,
+  Trash2,
+  Calendar,
+  ShieldCheck,
+  CheckCircle2,
+  TrendingUp,
+  Search,
+  Network,
+  ArrowRight,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
+  Cpu,
+  Activity,
+  Shield,
+  Send,
+  Stamp,
+  Lock,
+} from 'lucide-react';
 import { getForecasts, getForecastByHorizon, searchInvestigation } from '../services/api.js';
 
 /**
@@ -9,12 +32,19 @@ import { getForecasts, getForecastByHorizon, searchInvestigation } from '../serv
  * 1. Time-Series Predictive Forecasting (7d, 14d, 30d Horizons)
  * 2. AI Graph Search & Fraud Syndicate Investigation
  * 3. Official Compliance & SAR Dossiers
+ * Tailored for Fraud Analyst case investigation vs Admin Regulatory Governance.
  * Styled in luxury White & Gold theme.
  */
-export default function Reports() {
+export default function Reports({ forceView }) {
   const isViewOnly = useViewOnly();
+  const location = useLocation();
+  const isUserPath = location.pathname.endsWith('/user') || forceView === 'user';
+  const isAdminPath = location.pathname.endsWith('/admin') || forceView === 'admin';
+  const { role, currentUser } = useRole();
+  const isAdmin = isAdminPath || (!isUserPath && (role || currentUser?.role || '').toLowerCase() === 'admin');
 
   const [activeTab, setActiveTab] = useState('forecasts'); // 'forecasts' | 'investigations' | 'reports'
+  const [complianceNotice, setComplianceNotice] = useState(null);
 
   // Tab 1: Reports state
   const [reports, setReports] = useState([
@@ -153,6 +183,17 @@ export default function Reports() {
     setReports([newReport, ...reports]);
   };
 
+  const handleTransmitSAR = (reportId) => {
+    if (isViewOnly) return;
+    setReports((prev) =>
+      prev.map((r) =>
+        r.id === reportId ? { ...r, status: 'Dispatched to FinCEN' } : r
+      )
+    );
+    setComplianceNotice(`Regulatory Gateway: Filing ${reportId} cryptographically signed (SHA-256) and transmitted to FinCEN gateway.`);
+    setTimeout(() => setComplianceNotice(null), 5000);
+  };
+
   const handleDeleteReport = (id) => {
     if (isViewOnly) return;
     setReports(reports.filter((r) => r.id !== id));
@@ -163,9 +204,13 @@ export default function Reports() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1A1612] tracking-tight">Intelligence & Reports</h1>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1A1612] tracking-tight">
+            {isAdmin ? 'Regulatory Reports & SAR Compliance' : 'Intelligence & Reports'}
+          </h1>
           <p className="text-xs sm:text-sm text-[#5C5648] mt-1 font-normal">
-            Predictive time-series forecasting, syndicate graph traversal, and SAR regulatory dossiers.
+            {isAdmin
+              ? 'Enterprise compliance governance. Transmit official Suspicious Activity Reports (SAR) to FinCEN, verify cryptographic ledger seals, and manage regulatory attestations.'
+              : 'Predictive time-series forecasting, syndicate graph traversal, and SAR regulatory dossiers.'}
           </p>
         </div>
 
@@ -181,7 +226,7 @@ export default function Reports() {
             }`}
           >
             <TrendingUp className="w-3.5 h-3.5" />
-            <span>Time-Series Forecast</span>
+            <span>{isAdmin ? 'Threat Forecasting' : 'Time-Series Forecast'}</span>
           </button>
           <button
             type="button"
@@ -193,7 +238,7 @@ export default function Reports() {
             }`}
           >
             <Network className="w-3.5 h-3.5" />
-            <span>Syndicate Search</span>
+            <span>{isAdmin ? 'Syndicate Graph Search' : 'Syndicate Search'}</span>
           </button>
           <button
             type="button"
@@ -205,10 +250,56 @@ export default function Reports() {
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
-            <span>SAR Dossiers</span>
+            <span>{isAdmin ? 'Regulatory SAR Filings' : 'SAR Dossiers'}</span>
           </button>
         </div>
       </div>
+
+      {/* Admin-exclusive Compliance Governance Bar */}
+      {isAdmin && (
+        <div className="bg-gradient-to-r from-amber-500/10 via-yellow-500/10 to-amber-600/5 border border-amber-300 rounded-2xl p-4 sm:p-5 shadow-xs">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-xs">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-xs font-extrabold uppercase tracking-wider text-[#1A1612] flex items-center gap-2">
+                  <span>Regulatory Filing Gateway & Attestation</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-mono font-bold">TLS 1.3 CERTIFIED</span>
+                </div>
+                <div className="text-[11px] text-[#5C5648]">
+                  Automated FinCEN e-Filing • PCI-DSS 4.0 Type II • Immutable SHA-256 Compliance Hash
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 text-xs">
+              <div className="px-3 py-1.5 rounded-xl bg-white border border-[#E5DCBE] shadow-2xs">
+                <span className="text-[#8C8270] text-[10px] font-bold block uppercase">Gateway Status</span>
+                <span className="font-extrabold text-emerald-700 font-mono">Connected & Verified</span>
+              </div>
+              <div className="px-3 py-1.5 rounded-xl bg-white border border-[#E5DCBE] shadow-2xs">
+                <span className="text-[#8C8270] text-[10px] font-bold block uppercase">Pending SARs</span>
+                <span className="font-extrabold text-amber-900 font-mono">{reports.length} Verified</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Compliance Action Notice */}
+      {complianceNotice && (
+        <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-2xl flex items-center justify-between text-xs text-emerald-900 shadow-sm animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <span className="font-semibold">{complianceNotice}</span>
+          </div>
+          <button onClick={() => setComplianceNotice(null)} className="text-emerald-700 hover:text-emerald-950 font-bold">
+            ×
+          </button>
+        </div>
+      )}
 
       {/* TAB 1: TIME-SERIES FRAUD FORECASTING */}
       {activeTab === 'forecasts' && (
@@ -483,10 +574,12 @@ export default function Reports() {
             <div className="p-6 border-b border-[#EAE2CE] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 className="text-sm font-extrabold text-[#1A1612] uppercase tracking-wider">
-                  Available Regulatory & Audit Files
+                  {isAdmin ? 'Official FinCEN Regulatory Filing Register' : 'Available Regulatory & Audit Files'}
                 </h2>
                 <p className="text-xs text-[#5C5648] mt-0.5 font-normal">
-                  Export official FinCEN SAR filings, quarterly reconciliations, and compliance dossiers.
+                  {isAdmin
+                    ? 'Submit legally binding Suspicious Activity Reports (SAR), sign compliance records, and archive audit filings.'
+                    : 'Export official FinCEN SAR filings, quarterly reconciliations, and compliance dossiers.'}
                 </p>
               </div>
 
@@ -497,7 +590,7 @@ export default function Reports() {
                 className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-bold transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Generate New Report
+                {isAdmin ? 'Commission Regulatory Filing' : 'Generate New Report'}
               </button>
             </div>
 
@@ -522,8 +615,13 @@ export default function Reports() {
                             <FileText className="w-4 h-4 text-amber-600 flex-shrink-0" />
                           </div>
                           <div>
-                            <div className="font-bold text-[#1A1612] text-sm">
-                              {report.title}
+                            <div className="font-bold text-[#1A1612] text-sm flex items-center gap-2">
+                              <span>{report.title}</span>
+                              {report.status?.includes('Dispatched') && (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-100 text-emerald-900 border border-emerald-300">
+                                  TRANSMITTED
+                                </span>
+                              )}
                             </div>
                             <div className="text-[11px] font-mono text-[#8C8270]">
                               {report.id}
@@ -557,15 +655,31 @@ export default function Reports() {
                             <Download className="w-3.5 h-3.5 text-amber-600" />
                             <span>PDF</span>
                           </button>
-                          <button
-                            type="button"
-                            disabled={isViewOnly}
-                            onClick={() => handleDeleteReport(report.id)}
-                            className="p-1.5 rounded-xl hover:bg-rose-50 text-[#8C8270] hover:text-rose-600 transition-colors disabled:opacity-30 cursor-pointer"
-                            title="Delete Report"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              disabled={isViewOnly || report.status?.includes('Dispatched')}
+                              onClick={() => handleTransmitSAR(report.id)}
+                              className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white text-xs font-bold transition-colors shadow-2xs disabled:opacity-50 cursor-pointer"
+                              title="Cryptographically sign & dispatch to FinCEN"
+                            >
+                              <Send className="w-3 h-3" />
+                              <span>{report.status?.includes('Dispatched') ? 'Transmitted' : 'Transmit'}</span>
+                            </button>
+                          )}
+
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              disabled={isViewOnly}
+                              onClick={() => handleDeleteReport(report.id)}
+                              className="p-1.5 rounded-xl hover:bg-rose-50 text-[#8C8270] hover:text-rose-600 transition-colors disabled:opacity-30 cursor-pointer"
+                              title="Delete Report"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

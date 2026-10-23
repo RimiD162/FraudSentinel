@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useViewOnly } from '../components/RoleGuard.jsx';
 import {
   Search,
@@ -14,8 +15,12 @@ import {
   Sparkles,
   Check,
   X,
+  Sliders,
+  Terminal,
+  Shield,
 } from 'lucide-react';
 import { analyzeTransaction } from '../services/api.js';
+import { useRole } from '../context/RoleContext.jsx';
 
 // Indian States (28)
 const INDIAN_STATES = [
@@ -79,8 +84,13 @@ const getLocalDateTimeString = () => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
-export default function AnalyzeTransaction() {
+export default function AnalyzeTransaction({ forceView }) {
   const isViewOnly = useViewOnly();
+  const location = useLocation();
+  const isUserPath = location.pathname.endsWith('/user') || forceView === 'user';
+  const isAdminPath = location.pathname.endsWith('/admin') || forceView === 'admin';
+  const { role, currentUser } = useRole();
+  const isAdmin = isAdminPath || (!isUserPath && (role || currentUser?.role || '').toLowerCase() === 'admin');
 
   const [formData, setFormData] = useState({
     transaction_id: 'TXN-90214',
@@ -197,18 +207,52 @@ export default function AnalyzeTransaction() {
     <div className="space-y-8 max-w-6xl mx-auto">
       {/* Header */}
       <div>
-        <div className="flex items-center gap-2.5">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1A1612] tracking-tight">
-            Analyze Transaction
-          </h1>
-          <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-300 font-bold">
-            Live ML Engine
-          </span>
-        </div>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1A1612] tracking-tight">
+          {isAdmin ? 'ML Inference & Model Calibration Engine' : 'Analyze Transaction'}
+        </h1>
         <p className="text-xs sm:text-sm text-[#5C5648] mt-1 font-normal">
-          Submit transaction parameters to run real-time multi-model ML risk scoring, Bayesian belief inference, and symbolic KR&R rule reasoning.
+          {isAdmin
+            ? 'Execute forensic inference vectors, inspect multi-model decision boundaries, test custom sensitivity thresholds, and audit raw probability vectors.'
+            : 'Submit transaction parameters to run real-time multi-model ML risk scoring, Bayesian belief inference, and symbolic KR&R rule reasoning.'}
         </p>
       </div>
+
+      {/* Admin-exclusive Model Calibration Bar */}
+      {isAdmin && (
+        <div className="bg-gradient-to-r from-amber-500/10 via-yellow-500/10 to-amber-600/5 border border-amber-300 rounded-2xl p-4 sm:p-5 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                <Sliders className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wider text-[#1A1612]">
+                  Administrative Decision Threshold Calibration
+                </div>
+                <div className="text-[11px] text-[#5C5648]">
+                  Active Ensemble: XGBoost v2.4 (65%) + Random Forest (35%) • Engine Latency: 18ms
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <label className="text-xs font-bold text-[#1A1612] whitespace-nowrap">
+                Flag Cutoff: <span className="font-mono text-amber-900 font-extrabold">{formData.riskThreshold}%</span>
+              </label>
+              <input
+                type="range"
+                min="30"
+                max="90"
+                step="5"
+                value={formData.riskThreshold}
+                onChange={(e) => handleInputChange('riskThreshold', e.target.value)}
+                className="w-32 accent-amber-600 cursor-pointer"
+                title="Adjust Decision Boundary Threshold"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2.5 shadow-sm">

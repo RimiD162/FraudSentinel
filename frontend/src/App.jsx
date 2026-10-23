@@ -50,10 +50,11 @@ export default function App() {
           <Route path="/admin" element={<Navigate to="/login/admin" replace />} />
 
 
-          {/* Protected Dashboard Routes */}
-          <Route path="/dashboard" element={<DashboardLayout />}>
+          {/* Protected Routes inside DashboardLayout */}
+          <Route element={<DashboardLayout />}>
+            {/* Dashboard routes */}
             <Route
-              index
+              path="/dashboard"
               element={
                 <RoleGuard section="dashboard">
                   <Dashboard />
@@ -61,7 +62,25 @@ export default function App() {
               }
             />
             <Route
-              path="analyze"
+              path="/dashboard/user"
+              element={
+                <RoleGuard section="dashboard">
+                  <Dashboard forceView="user" />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/dashboard/admin"
+              element={
+                <RoleGuard section="dashboard">
+                  <Dashboard forceView="admin" />
+                </RoleGuard>
+              }
+            />
+
+            {/* Analyze Transaction Routes */}
+            <Route
+              path="/analyze"
               element={
                 <RoleGuard section="analyzeTransaction">
                   <AnalyzeTransaction />
@@ -69,7 +88,28 @@ export default function App() {
               }
             />
             <Route
-              path="transactions"
+              path="/analyze/user"
+              element={
+                <RoleGuard section="analyzeTransaction">
+                  <AnalyzeTransaction forceView="user" />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/analyze/admin"
+              element={
+                <RoleGuard section="analyzeTransaction">
+                  <AnalyzeTransaction forceView="admin" />
+                </RoleGuard>
+              }
+            />
+            <Route path="/dashboard/analyze" element={<Navigate to="/analyze" replace />} />
+            <Route path="/dashboard/analyze/user" element={<Navigate to="/analyze/user" replace />} />
+            <Route path="/dashboard/analyze/admin" element={<Navigate to="/analyze/admin" replace />} />
+
+            {/* Transactions Routes */}
+            <Route
+              path="/transactions"
               element={
                 <RoleGuard section="transactions">
                   <Transactions />
@@ -77,7 +117,28 @@ export default function App() {
               }
             />
             <Route
-              path="alerts"
+              path="/transactions/user"
+              element={
+                <RoleGuard section="transactions">
+                  <Transactions forceView="user" />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/transactions/admin"
+              element={
+                <RoleGuard section="transactions">
+                  <Transactions forceView="admin" />
+                </RoleGuard>
+              }
+            />
+            <Route path="/dashboard/transactions" element={<Navigate to="/transactions" replace />} />
+            <Route path="/dashboard/transactions/user" element={<Navigate to="/transactions/user" replace />} />
+            <Route path="/dashboard/transactions/admin" element={<Navigate to="/transactions/admin" replace />} />
+
+            {/* Fraud Alerts Routes */}
+            <Route
+              path="/alerts"
               element={
                 <RoleGuard section="fraudAlerts">
                   <FraudAlerts />
@@ -85,7 +146,28 @@ export default function App() {
               }
             />
             <Route
-              path="analytics"
+              path="/alerts/user"
+              element={
+                <RoleGuard section="fraudAlerts">
+                  <FraudAlerts forceView="user" />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/alerts/admin"
+              element={
+                <RoleGuard section="fraudAlerts">
+                  <FraudAlerts forceView="admin" />
+                </RoleGuard>
+              }
+            />
+            <Route path="/dashboard/alerts" element={<Navigate to="/alerts" replace />} />
+            <Route path="/dashboard/alerts/user" element={<Navigate to="/alerts/user" replace />} />
+            <Route path="/dashboard/alerts/admin" element={<Navigate to="/alerts/admin" replace />} />
+
+            {/* Analytics Routes */}
+            <Route
+              path="/analytics"
               element={
                 <RoleGuard section="analytics">
                   <Analytics />
@@ -93,7 +175,28 @@ export default function App() {
               }
             />
             <Route
-              path="reports"
+              path="/analytics/user"
+              element={
+                <RoleGuard section="analytics">
+                  <Analytics forceView="user" />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/analytics/admin"
+              element={
+                <RoleGuard section="analytics">
+                  <Analytics forceView="admin" />
+                </RoleGuard>
+              }
+            />
+            <Route path="/dashboard/analytics" element={<Navigate to="/analytics" replace />} />
+            <Route path="/dashboard/analytics/user" element={<Navigate to="/analytics/user" replace />} />
+            <Route path="/dashboard/analytics/admin" element={<Navigate to="/analytics/admin" replace />} />
+
+            {/* Reports Routes */}
+            <Route
+              path="/reports"
               element={
                 <RoleGuard section="reports">
                   <Reports />
@@ -101,7 +204,28 @@ export default function App() {
               }
             />
             <Route
-              path="users"
+              path="/reports/user"
+              element={
+                <RoleGuard section="reports">
+                  <Reports forceView="user" />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/reports/admin"
+              element={
+                <RoleGuard section="reports">
+                  <Reports forceView="admin" />
+                </RoleGuard>
+              }
+            />
+            <Route path="/dashboard/reports" element={<Navigate to="/reports" replace />} />
+            <Route path="/dashboard/reports/user" element={<Navigate to="/reports/user" replace />} />
+            <Route path="/dashboard/reports/admin" element={<Navigate to="/reports/admin" replace />} />
+
+            {/* User Management */}
+            <Route
+              path="/users"
               element={
                 <RoleGuard section="userManagement">
                   <UserManagement />
@@ -109,13 +233,41 @@ export default function App() {
               }
             />
             <Route
-              path="settings"
+              path="/users/admin"
+              element={
+                <RoleGuard section="userManagement">
+                  <UserManagement />
+                </RoleGuard>
+              }
+            />
+            <Route path="/dashboard/users" element={<Navigate to="/users/admin" replace />} />
+
+            {/* Settings */}
+            <Route
+              path="/settings"
               element={
                 <RoleGuard section="settings">
                   <Settings />
                 </RoleGuard>
               }
             />
+            <Route
+              path="/settings/user"
+              element={
+                <RoleGuard section="settings">
+                  <Settings />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/settings/admin"
+              element={
+                <RoleGuard section="settings">
+                  <Settings />
+                </RoleGuard>
+              }
+            />
+            <Route path="/dashboard/settings" element={<Navigate to="/settings" replace />} />
           </Route>
 
           {/* Catch-all fallback */}
