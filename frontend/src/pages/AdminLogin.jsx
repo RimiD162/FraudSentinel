@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   ShieldCheck,
   Mail,
@@ -14,6 +14,7 @@ import {
   Cpu,
   User,
   Key,
+  Shield,
 } from 'lucide-react';
 import { useRole } from '../context/RoleContext.jsx';
 
@@ -24,13 +25,16 @@ import { useRole } from '../context/RoleContext.jsx';
  */
 export default function AdminLogin() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { loginWithCredentials, registerWithCredentials, isSupabaseConfigured, apiStatus, currentUser, role } = useRole();
+
+  const targetPath = location.state?.from?.pathname || '/dashboard/admin';
 
   React.useEffect(() => {
     if (currentUser && (role === 'admin' || currentUser.role === 'admin')) {
-      navigate('/dashboard/admin');
+      navigate(targetPath, { replace: true });
     }
-  }, [currentUser, role, navigate]);
+  }, [currentUser, role, navigate, targetPath]);
 
 
   const [authMode, setAuthMode] = useState('signin'); // 'signin' | 'signup'
@@ -84,7 +88,7 @@ export default function AdminLogin() {
         } else {
           setSuccessMessage('Administrator account provisioned successfully! Launching Admin Console...');
           setTimeout(() => {
-            navigate('/dashboard/admin');
+            navigate(targetPath, { replace: true });
           }, 500);
         }
       } catch (err) {
@@ -115,7 +119,7 @@ export default function AdminLogin() {
 
         setSuccessMessage('Administrator credentials verified. Launching Admin Console...');
         setTimeout(() => {
-          navigate('/dashboard/admin');
+          navigate(targetPath, { replace: true });
         }, 500);
       } catch (err) {
         setErrorMessage(err.message || 'Administrator authentication failed. Access rejected.');
@@ -142,6 +146,13 @@ export default function AdminLogin() {
         </Link>
 
         <div className="flex items-center gap-3">
+          <Link
+            to="/admin/signup"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 transition-colors px-3.5 py-1.5 rounded-lg border border-amber-300 shadow-xs"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
+            Admin Signup
+          </Link>
           <Link
             to="/login/user"
             className="inline-flex items-center gap-1.5 text-xs font-bold text-[#5C5648] hover:text-amber-900 transition-colors bg-white px-3.5 py-1.5 rounded-lg border border-[#E5DCBE] shadow-xs hover:border-amber-400"
@@ -182,6 +193,18 @@ export default function AdminLogin() {
             </div>
 
 
+            {/* Current Session Non-Admin Clearance Warning */}
+            {currentUser && (currentUser.role || role || '').toLowerCase() !== 'admin' && (
+              <div className="mb-5 p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 text-xs flex items-start gap-2.5 shadow-xs">
+                <Shield className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="leading-relaxed">
+                  <span className="font-bold">Administrator Clearance Required:</span> You are currently signed in as{' '}
+                  <strong>{currentUser.email}</strong> with role <span className="uppercase font-bold text-amber-800">[{currentUser.role || 'user'}]</span>.
+                  Please authenticate with administrator credentials to access the Executive Control Center.
+                </div>
+              </div>
+            )}
+
             {/* Error Alert */}
             {errorMessage && (
               <div className="mb-5 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs flex items-start gap-2.5 shadow-xs animate-shake">
@@ -195,6 +218,24 @@ export default function AdminLogin() {
               <div className="mb-5 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-start gap-2.5 shadow-xs animate-fadeIn">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <span className="leading-relaxed font-medium">{successMessage}</span>
+              </div>
+            )}
+
+            {/* Quick Demo Credential Helper */}
+            {authMode === 'signin' && (
+              <div className="mb-4 p-2.5 rounded-xl bg-[#FAF8F2] border border-[#E5DCBE] flex items-center justify-between text-xs">
+                <span className="text-[#5C5648] font-medium">Default Admin: <strong className="text-[#1A1612]">admin@fraudsentinel.com</strong></span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('admin@fraudsentinel.com');
+                    setPassword('admin123');
+                    setErrorMessage(null);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-[11px] transition-colors cursor-pointer"
+                >
+                  Auto-Fill
+                </button>
               </div>
             )}
 
@@ -318,18 +359,17 @@ export default function AdminLogin() {
               </div>
 
               {/* Lower Switch Sign In / Sign Up Notice */}
-              <div className="pt-4 border-t border-[#EAE2CE] text-center text-xs text-[#6B6454] space-y-2">
+              <div className="pt-4 border-t border-[#EAE2CE] text-center text-xs text-[#6B6454] space-y-2.5">
                 <div>
                   {authMode === 'signin' ? (
                     <span>
-                      Administrator account not signed up yet?{' '}
-                      <button
-                        type="button"
-                        onClick={() => handleModeSwitch('signup')}
-                        className="font-bold text-amber-800 hover:text-amber-900 underline underline-offset-2 transition-colors cursor-pointer"
+                      Administrator account not provisioned yet?{' '}
+                      <Link
+                        to="/admin/signup"
+                        className="font-bold text-amber-800 hover:text-amber-950 underline underline-offset-2 transition-colors cursor-pointer"
                       >
                         Sign Up as Admin
-                      </button>
+                      </Link>
                     </span>
                   ) : (
                     <span>
@@ -345,12 +385,19 @@ export default function AdminLogin() {
                   )}
                 </div>
 
-                <div className="pt-2 border-t border-[#F2ECE0]">
+                <div className="pt-2 border-t border-[#F2ECE0] flex items-center justify-center gap-3">
                   <Link
                     to="/login/user"
+                    className="font-semibold text-[#5C5648] hover:text-amber-900 transition-colors inline-flex items-center gap-1"
+                  >
+                    <span>User Portal →</span>
+                  </Link>
+                  <span className="text-gray-300">•</span>
+                  <Link
+                    to="/admin/signup"
                     className="font-semibold text-amber-800 hover:text-amber-950 transition-colors inline-flex items-center gap-1"
                   >
-                    <span>Switch to User Portal →</span>
+                    <span>Provision Admin Key →</span>
                   </Link>
                 </div>
               </div>

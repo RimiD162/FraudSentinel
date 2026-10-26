@@ -8,7 +8,7 @@ import { ArrowRight, ShieldCheck } from 'lucide-react';
  */
 export default function CtaBanner() {
   return (
-    <section className="pt-6 pb-12 bg-gradient-to-b from-[#FAFAF8] to-[#F6F1E3] border-t border-[#EBE3D0]">
+    <section id="cta" className="py-20 bg-gradient-to-b from-[#FAFAF8] to-[#F6F1E3] border-t border-[#EBE3D0] scroll-mt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-gradient-to-br from-white via-[#FDFBF7] to-[#F8F3E6] border border-[#DFC78E] rounded-3xl p-8 sm:p-12 text-center relative overflow-hidden shadow-[0_20px_50px_rgba(197,154,63,0.15)]">
           
@@ -28,13 +28,19 @@ export default function CtaBanner() {
               Experience the full power of FraudSentinel's real-time risk scoring, role-based workflows, and automated threat mitigation.
             </p>
 
-            <div className="pt-3">
+            <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
               <Link
                 to="/login/user"
                 className="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-base transition-all shadow-xl shadow-amber-500/30 hover:shadow-2xl hover:shadow-amber-500/40 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-amber-500"
               >
-                Launch Dashboard Demo
+                Launch User Terminal
                 <ArrowRight className="w-5 h-5" />
+              </Link>
+              <Link
+                to="/admin/login"
+                className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-white hover:bg-amber-50 text-[#1A1612] font-bold text-base border border-[#DFC78E] hover:border-amber-400 transition-all shadow-sm hover:-translate-y-0.5"
+              >
+                Access Admin Portal
               </Link>
             </div>
           </div>

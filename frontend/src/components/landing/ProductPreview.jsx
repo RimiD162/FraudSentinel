@@ -8,7 +8,7 @@ import { Lock, Zap } from 'lucide-react';
  */
 export default function ProductPreview() {
   return (
-    <section className="pt-16 pb-10 bg-gradient-to-b from-[#F9F7F1] to-[#FAF8F3] border-t border-[#EBE3D0]">
+    <section id="preview" className="pt-20 pb-16 bg-gradient-to-b from-[#F9F7F1] to-[#FAF8F3] border-t border-[#EBE3D0] scroll-mt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}

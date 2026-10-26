@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   User,
   CheckCircle2,
+  Lock,
 } from 'lucide-react';
 import { useRole } from '../context/RoleContext.jsx';
 
@@ -121,13 +122,22 @@ export default function Login() {
           </span>
         </Link>
 
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#5C5648] hover:text-amber-900 transition-colors bg-white px-3.5 py-1.5 rounded-lg border border-[#E5DCBE] shadow-xs hover:border-amber-400"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Back to Home
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/admin/login"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 transition-colors px-3 py-1.5 rounded-lg border border-amber-300 shadow-xs"
+          >
+            <Lock className="w-3.5 h-3.5 text-amber-600" />
+            Admin Portal
+          </Link>
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#5C5648] hover:text-amber-900 transition-colors bg-white px-3.5 py-1.5 rounded-lg border border-[#E5DCBE] shadow-xs hover:border-amber-400"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Back to Home
+          </Link>
+        </div>
       </header>
 
       {/* Main Container - Formal Enterprise Card */}
@@ -286,18 +296,17 @@ export default function Login() {
               </div>
 
               {/* Lower Sign Up / Sign In Switch Link */}
-              <div className="pt-4 border-t border-[#EAE2CE] text-center text-xs text-[#6B6454] space-y-2">
+              <div className="pt-4 border-t border-[#EAE2CE] text-center text-xs text-[#6B6454] space-y-2.5">
                 <div>
                   {authMode === 'signin' ? (
                     <span>
                       Don't have a user account?{' '}
-                      <button
-                        type="button"
-                        onClick={() => handleModeSwitch('signup')}
+                      <Link
+                        to="/signup/user"
                         className="font-bold text-amber-800 hover:text-amber-900 underline underline-offset-2 transition-colors cursor-pointer"
                       >
                         Sign Up
-                      </button>
+                      </Link>
                     </span>
                   ) : (
                     <span>
@@ -311,6 +320,22 @@ export default function Login() {
                       </button>
                     </span>
                   )}
+                </div>
+
+                <div className="pt-1.5 border-t border-[#F5EFE0] flex items-center justify-center gap-3">
+                  <Link
+                    to="/admin/login"
+                    className="font-semibold text-amber-800 hover:text-amber-950 transition-colors inline-flex items-center gap-1"
+                  >
+                    <span>System Admin Login →</span>
+                  </Link>
+                  <span className="text-gray-300">•</span>
+                  <Link
+                    to="/admin/signup"
+                    className="font-semibold text-[#5C5648] hover:text-amber-900 transition-colors inline-flex items-center gap-1"
+                  >
+                    <span>Admin Signup →</span>
+                  </Link>
                 </div>
               </div>
 

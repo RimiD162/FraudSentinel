@@ -76,12 +76,33 @@ const NAV_ITEMS = [
 export default function Sidebar() {
   const { role, currentUser, getPermission } = useRole();
   const location = useLocation();
-  const isExplicitUser = location.pathname.endsWith('/user');
-  const isExplicitAdmin = location.pathname.endsWith('/admin');
-  const isAdmin = isExplicitAdmin || (!isExplicitUser && (role || currentUser?.role || '').toLowerCase() === 'admin');
+  // STRICT AUTHENTICATED ADMIN VERIFICATION:
+  // Admin navigation routes ONLY show after successfully logging in as an administrator!
+  const currentRole = (currentUser?.role || role || '').toLowerCase();
+  const isAdmin = Boolean(currentUser && currentRole === 'admin');
   const roleSegment = isAdmin ? 'admin' : 'user';
 
-  // Filter items dynamically using centralized permission table and assign dedicated paths like /analyze/user
+  const checkIsActive = (item) => {
+    const cur = location.pathname;
+    if (item.id === 'dashboard') {
+      return (
+        cur === item.path ||
+        (isAdmin
+          ? cur === '/admin/dashboard' || cur === '/dashboard/admin' || cur === '/admin'
+          : cur === '/user/dashboard' || cur === '/dashboard/user' || cur === '/dashboard')
+      );
+    }
+    if (item.id === 'users') {
+      return cur.startsWith('/users') || cur.startsWith('/admin/users');
+    }
+    return (
+      cur === item.path ||
+      cur === `${item.basePath}/${roleSegment}` ||
+      cur === `/${roleSegment}${item.basePath}`
+    );
+  };
+
+  // Filter items dynamically: if not logged in as admin, NEVER show admin-only routes!
   const visibleNavItems = NAV_ITEMS
     .filter((item) => {
       if (!isAdmin && (item.id === 'analytics' || item.id === 'reports' || item.id === 'users')) {
@@ -93,8 +114,8 @@ export default function Sidebar() {
       if (item.id === 'dashboard') {
         return {
           ...item,
-          path: `/dashboard/${roleSegment}`,
-          label: isAdmin ? 'Admin Dashboard' : 'User Dashboard',
+          path: isAdmin ? '/admin/dashboard' : '/dashboard/user',
+          label: isAdmin ? 'Admin Dashboard' : 'Dashboard',
         };
       }
       if (item.id === 'analyze') {
@@ -121,21 +142,21 @@ export default function Sidebar() {
       if (item.id === 'analytics') {
         return {
           ...item,
-          path: `/analytics/${roleSegment}`,
-          label: isAdmin ? 'Executive Telemetry' : 'Analytics',
+          path: '/admin/analytics',
+          label: 'Executive Telemetry',
         };
       }
       if (item.id === 'reports') {
         return {
           ...item,
-          path: `/reports/${roleSegment}`,
-          label: isAdmin ? 'Regulatory & SAR' : 'Reports',
+          path: '/admin/reports',
+          label: 'Regulatory & SAR',
         };
       }
       if (item.id === 'users') {
         return {
           ...item,
-          path: `/users/admin`,
+          path: '/admin/users',
           label: 'User Management',
         };
       }
@@ -180,43 +201,47 @@ export default function Sidebar() {
                   <NavLink
                     to={item.path}
                     end={item.path === '/dashboard'}
-                    className={({ isActive }) =>
-                      `w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none max-[900px]:justify-center max-[900px]:px-0 ${
-                        isActive
+                    className={({ isActive }) => {
+                      const active = isActive || checkIsActive(item);
+                      return `w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none max-[900px]:justify-center max-[900px]:px-0 ${
+                        active
                           ? 'bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-md shadow-amber-500/25'
                           : 'text-[#5C5648] hover:text-[#1A1612] hover:bg-amber-50/70 border border-transparent hover:border-amber-200/50'
-                      }`
-                    }
+                      }`;
+                    }}
                     title={
                       isViewOnlySection
                         ? `${item.label} (View-Only Access)`
                         : item.label
                     }
                   >
-                    {({ isActive }) => (
-                      <>
-                        <Icon
-                          className={`w-4 h-4 flex-shrink-0 transition-colors ${
-                            isActive ? 'text-white' : 'text-amber-600'
-                          }`}
-                        />
-                        <span className="max-[900px]:hidden truncate flex-1 text-left">
-                          {item.label}
-                        </span>
-                        {isViewOnlySection && (
-                          <span
-                            className={`max-[900px]:hidden text-[10px] px-1.5 py-0.5 rounded font-mono font-bold ${
-                              isActive
-                                ? 'bg-white/20 text-white'
-                                : 'bg-amber-50 text-amber-800 border border-amber-200'
+                    {({ isActive }) => {
+                      const active = isActive || checkIsActive(item);
+                      return (
+                        <>
+                          <Icon
+                            className={`w-4 h-4 flex-shrink-0 transition-colors ${
+                              active ? 'text-white' : 'text-amber-600'
                             }`}
-                            title="View-only access for current role"
-                          >
-                            Read
+                          />
+                          <span className="max-[900px]:hidden truncate flex-1 text-left">
+                            {item.label}
                           </span>
-                        )}
-                      </>
-                    )}
+                          {isViewOnlySection && (
+                            <span
+                              className={`max-[900px]:hidden text-[10px] px-1.5 py-0.5 rounded font-mono font-bold ${
+                                active
+                                  ? 'bg-white/20 text-white'
+                                  : 'bg-amber-50 text-amber-800 border border-amber-200'
+                              }`}
+                              title="View-only access for current role"
+                            >
+                              Read
+                            </span>
+                          )}
+                        </>
+                      );
+                    }}
                   </NavLink>
                 </li>
               );

@@ -38,9 +38,9 @@ export default function Transactions({ forceView }) {
   const isViewOnly = useViewOnly();
   const location = useLocation();
   const isUserPath = location.pathname.endsWith('/user') || forceView === 'user';
-  const isAdminPath = location.pathname.endsWith('/admin') || forceView === 'admin';
   const { role, currentUser } = useRole();
-  const isAdmin = isAdminPath || (!isUserPath && (role || currentUser?.role || '').toLowerCase() === 'admin');
+  const isUserAdminRole = Boolean(currentUser && (currentUser.role || role || '').toLowerCase() === 'admin');
+  const isAdmin = isUserAdminRole && (isAdminPath || !isUserPath);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('All');

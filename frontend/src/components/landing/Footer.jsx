@@ -81,11 +81,18 @@ export default function Footer() {
                 <span>User Portal →</span>
               </Link>
               <Link
-                to="/login/admin"
+                to="/admin/login"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-300 text-xs font-semibold text-amber-900 transition-colors shadow-2xs"
                 title="System Administrator Console"
               >
-                <span>Admin Portal →</span>
+                <span>Admin Login →</span>
+              </Link>
+              <Link
+                to="/admin/signup"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-amber-50 border border-[#E5DCBE] hover:border-amber-400 text-xs font-semibold text-[#5C5648] hover:text-amber-900 transition-colors shadow-2xs"
+                title="Admin Sign Up"
+              >
+                <span>Admin Signup →</span>
               </Link>
             </div>
           </div>

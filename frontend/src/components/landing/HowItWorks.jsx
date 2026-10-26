@@ -28,7 +28,7 @@ export default function HowItWorks() {
   ];
 
   return (
-    <section id="how-it-works" className="pt-8 pb-8 bg-[#FAFAF8]">
+    <section id="how-it-works" className="py-20 bg-[#FAFAF8] border-t border-[#EBE3D0] scroll-mt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Heading */}

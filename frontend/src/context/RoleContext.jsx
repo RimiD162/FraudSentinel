@@ -166,25 +166,26 @@ export function RoleProvider({ children }) {
       let token = null;
 
       if (isSupabaseConfigured && supabase) {
-        // Real Supabase email/password authentication
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password,
-        });
+        try {
+          // Attempt Supabase email/password authentication
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password,
+          });
 
-        if (error) {
-          throw new Error(error.message);
+          if (!error && data?.session?.access_token) {
+            token = data.session.access_token;
+          }
+        } catch (supErr) {
+          console.warn('[RoleContext] Supabase sign in error:', supErr?.message);
         }
+      }
 
-        if (!data?.session?.access_token) {
-          throw new Error('Supabase authentication did not return an active session.');
-        }
-        token = data.session.access_token;
-      } else {
+      if (!token) {
         // Direct FastAPI backend authentication (SQLite database verification)
         const backendRes = await backendLogin(email.trim(), password);
         if (!backendRes?.access_token) {
-          throw new Error('Backend authentication did not return an access token.');
+          throw new Error('Invalid email or password. Please check your credentials.');
         }
         token = backendRes.access_token;
       }
@@ -227,30 +228,31 @@ export function RoleProvider({ children }) {
         let token = null;
 
         if (isSupabaseConfigured && supabase) {
-          const { data, error } = await supabase.auth.signUp({
-            email: email.trim(),
-            password,
-            options: {
-              data: {
-                full_name: fullName.trim(),
+          try {
+            const { data, error } = await supabase.auth.signUp({
+              email: email.trim(),
+              password,
+              options: {
+                data: {
+                  full_name: fullName.trim(),
+                },
               },
-            },
-          });
+            });
 
-          if (error) {
-            throw new Error(error.message);
+            if (!error && data?.session?.access_token) {
+              token = data.session.access_token;
+            } else if (!error && data?.user && !data?.session) {
+              return {
+                status: 'confirmation_required',
+                message: 'Registration successful! Please check your email to confirm your account.',
+              };
+            }
+          } catch (supErr) {
+            console.warn('[RoleContext] Supabase register error:', supErr?.message);
           }
+        }
 
-          if (data?.session?.access_token) {
-            token = data.session.access_token;
-          } else {
-            // Email confirmation required or pending
-            return {
-              status: 'confirmation_required',
-              message: 'Registration successful! Please check your email to confirm your account.',
-            };
-          }
-        } else {
+        if (!token) {
           const normalizedRole = targetRole.toLowerCase() === 'admin' ? 'admin' : 'analyst';
           const backendRes = await backendRegister({
             email: email.trim(),

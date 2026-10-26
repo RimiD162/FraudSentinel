@@ -30,17 +30,37 @@ export default function DashboardLayout() {
     );
   }
 
-  // Enforce authentication on all dashboard routes
+  const normalizedPath = (location.pathname || '').toLowerCase().replace(/\/+$/, '');
+  const isAdminRoute = (
+    normalizedPath === '/admin' ||
+    normalizedPath.startsWith('/admin/') ||
+    normalizedPath === '/dashboard/admin' ||
+    normalizedPath.startsWith('/dashboard/admin/') ||
+    normalizedPath.endsWith('/admin') ||
+    normalizedPath === '/users' ||
+    normalizedPath.startsWith('/users/') ||
+    normalizedPath === '/dashboard/users' ||
+    normalizedPath.startsWith('/dashboard/users/')
+  );
+
+  // 1. Enforce authentication on all dashboard routes
   if (!currentUser) {
-    return <Navigate to="/login/user" state={{ from: location }} replace />;
+    return <Navigate to={isAdminRoute ? '/admin/login' : '/login/user'} state={{ from: location }} replace />;
+  }
+
+  // 2. Strict Administrator Clearance:
+  // Admin routes ONLY show after logging in as an administrator. Otherwise, redirect to Admin Login!
+  const currentRole = (currentUser.role || role || '').toLowerCase();
+  if (isAdminRoute && currentRole !== 'admin') {
+    return <Navigate to="/admin/login" state={{ from: location }} replace />;
   }
 
   const formatPathLabel = (path) => {
-    const clean = path.replace('/dashboard/', '').replace('/dashboard', '').trim();
+    if (path.includes('/dashboard/admin') || path === '/admin/dashboard' || path === '/admin') return 'Admin Dashboard';
+    if (path.includes('/dashboard/user') || path === '/user/dashboard') return 'User Dashboard';
+    const clean = path.replace('/dashboard/', '').replace('/dashboard', '').replace('/admin/', '').replace('/user/', '').trim();
     if (!clean || clean === 'Overview') return 'Overview';
-    if (clean === 'user') return 'User Dashboard';
-    if (clean === 'admin') return 'Admin Dashboard';
-    return clean.replace(/([A-Z])/g, ' $1');
+    return clean.replace(/([A-Z])/g, ' $1').replace('/', ' • ');
   };
   const pathLabel = formatPathLabel(location.pathname);
 

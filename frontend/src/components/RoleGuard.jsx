@@ -1,7 +1,7 @@
 import React, { createContext, useContext } from 'react';
 import { useRole } from '../context/RoleContext.jsx';
 import { Lock, ArrowLeft, Eye } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 
 const ViewOnlyContext = createContext(false);
 
@@ -16,12 +16,24 @@ export function useViewOnly() {
  * RoleGuard Component
  * 
  * Enforces role-based permissions:
+ * - 'requiredRole': If specified, checks that currentUser has the matching role (e.g., 'admin').
  * - 'full': Renders children directly with complete interactivity.
  * - 'view': Renders children in read-only mode with a visible 'View-only access' banner.
  * - 'hidden': Displays a clear 'Access Denied' screen.
  */
-export default function RoleGuard({ section, children }) {
-  const { getPermission, roleMeta } = useRole();
+export default function RoleGuard({ section, requiredRole, children }) {
+  const { role, currentUser, getPermission, roleMeta } = useRole();
+  const location = useLocation();
+  const currentRole = (currentUser?.role || role || 'viewer').toLowerCase();
+
+  // If admin clearance is required:
+  // Admin routes ONLY show after logging in as an administrator. Otherwise, redirect to Admin Login!
+  if (requiredRole === 'admin') {
+    if (!currentUser || currentRole !== 'admin') {
+      return <Navigate to="/admin/login" state={{ from: location }} replace />;
+    }
+  }
+
   const permission = getPermission(section);
 
   // Hidden/Blocked: Show access denied screen

@@ -36,9 +36,9 @@ export default function Dashboard({ forceView }) {
   // Determine active view: explicit prop, URL route, or role fallback
   let activeView = forceView;
   if (!activeView) {
-    if (location.pathname.endsWith('/admin')) {
+    if (location.pathname.endsWith('/admin') || location.pathname.startsWith('/admin')) {
       activeView = 'admin';
-    } else if (location.pathname.endsWith('/user')) {
+    } else if (location.pathname.endsWith('/user') || location.pathname.startsWith('/user')) {
       activeView = 'user';
     } else {
       activeView = userIsAdmin ? 'admin' : 'user';
@@ -49,7 +49,7 @@ export default function Dashboard({ forceView }) {
   useEffect(() => {
     const isRootDashboard = location.pathname === '/dashboard' || location.pathname === '/dashboard/';
     if (isRootDashboard) {
-      navigate(userIsAdmin ? '/dashboard/admin' : '/dashboard/user', { replace: true });
+      navigate(userIsAdmin ? '/admin/dashboard' : '/dashboard/user', { replace: true });
     }
   }, [location.pathname, userIsAdmin, navigate]);
 
@@ -208,7 +208,7 @@ export default function Dashboard({ forceView }) {
 
   // Strict RBAC: Non-admin users cannot access the /dashboard/admin route
   if (activeView === 'admin' && !userIsAdmin) {
-    return <Navigate to="/dashboard/user" replace />;
+    return <Navigate to="/admin/login" state={{ from: location }} replace />;
   }
 
   if (activeView === 'admin') {
