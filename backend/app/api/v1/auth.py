@@ -123,6 +123,23 @@ def register(
     email_clean = payload.email.strip().lower()
     target_role_name = (payload.role or "analyst").lower().strip()
 
+    # Enforce mandatory Security Clearance PIN for Administrator provisioning
+    if target_role_name == "admin":
+        expected_pin = (settings.ADMIN_SECURITY_PIN or "Fraudanalysis").strip()
+        provided_pin = (payload.security_pin or "").strip()
+        if not provided_pin or provided_pin != expected_pin:
+            log_audit_event(
+                db=db,
+                action="AUTH_ADMIN_REGISTER_REJECTED",
+                resource_type="auth",
+                details={"email": email_clean, "reason": "Invalid or missing security PIN"},
+                ip_address=client_ip,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Invalid or missing Security Clearance PIN. Administrator provisioning denied.",
+            )
+
     existing = db.query(User).filter(User.email.ilike(email_clean)).first()
 
     role = db.query(Role).filter(Role.name == target_role_name).first()

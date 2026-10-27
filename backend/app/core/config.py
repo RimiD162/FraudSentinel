@@ -25,8 +25,11 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
 
+    # Administrative Provisioning Security Clearance PIN
+    ADMIN_SECURITY_PIN: str = "Fraudanalysis"
+
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(".env", "backend/.env", "../.env"),
         env_file_encoding="utf-8",
         extra="ignore",
     )

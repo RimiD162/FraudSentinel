@@ -121,10 +121,10 @@ export async function login(email, password) {
   return data;
 }
 
-export async function registerUser({ email, password, full_name, role = 'analyst' }) {
+export async function registerUser({ email, password, full_name, role = 'analyst', security_pin = null }) {
   const data = await request('/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ email, password, full_name, role }),
+    body: JSON.stringify({ email, password, full_name, role, security_pin }),
   });
   if (data?.access_token) {
     setAuthToken(data.access_token, data.role);

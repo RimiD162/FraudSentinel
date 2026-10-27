@@ -64,9 +64,20 @@ export default function AdminSignup() {
       return;
     }
 
+    if (!adminClearanceKey.trim()) {
+      setErrorMessage('Security Clearance PIN is mandatory for administrator provisioning.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await registerWithCredentials(email.trim(), password, fullName.trim(), 'admin');
+      const res = await registerWithCredentials(
+        email.trim(),
+        password,
+        fullName.trim(),
+        'admin',
+        adminClearanceKey.trim(),
+      );
       if (res?.status === 'confirmation_required') {
         setSuccessMessage(res.message);
       } else {
@@ -265,12 +276,12 @@ export default function AdminSignup() {
                 </div>
               </div>
 
-              {/* Admin Provisioning Clearance Key (Optional/Enterprise Token) */}
+              {/* Admin Provisioning Clearance PIN (Required) */}
               <div>
                 <label className="block text-xs font-bold text-[#1A1612] uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                  <span>Security Clearance Token (Optional)</span>
-                  <span className="text-[10px] text-amber-800 font-semibold normal-case bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                    Enterprise RBAC
+                  <span>Security Clearance PIN (Required)</span>
+                  <span className="text-[10px] text-rose-800 font-semibold normal-case bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                    Mandatory for Admin
                   </span>
                 </label>
                 <div className="relative">
@@ -278,13 +289,17 @@ export default function AdminSignup() {
                     <Key className="w-4 h-4 text-amber-600" />
                   </div>
                   <input
-                    type="text"
+                    type="password"
+                    required
                     value={adminClearanceKey}
                     onChange={(e) => setAdminClearanceKey(e.target.value)}
-                    placeholder="SENTINEL-ROOT-AUTH (Optional)"
+                    placeholder="Enter Admin Security PIN"
                     className="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-xl bg-[#FAF8F4] border border-[#E5DCBE] focus:bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-400/20 text-[#1A1612] text-sm font-medium transition-all outline-none font-mono"
                   />
                 </div>
+                <span className="text-[11px] text-[#6B6454] mt-1 block">
+                  Root access security: Administrator sign up strictly requires the configured backend security clearance PIN.
+                </span>
               </div>
 
               {/* Submit Admin Button */}

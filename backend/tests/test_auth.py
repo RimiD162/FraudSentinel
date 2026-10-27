@@ -167,7 +167,7 @@ def test_register_duplicate_analyst_fails(client: TestClient, analyst_user: User
 
 
 def test_register_admin_provision_existing_user(client: TestClient, analyst_user: User, db_session: Session):
-    """Test provisioning an existing user into an administrator account."""
+    """Test provisioning an existing user into an administrator account with valid security PIN."""
     response = client.post(
         "/api/v1/auth/register",
         json={
@@ -175,6 +175,7 @@ def test_register_admin_provision_existing_user(client: TestClient, analyst_user
             "password": "NewMasterPassword!123",
             "full_name": "Promoted Admin Officer",
             "role": "admin",
+            "security_pin": "Fraudanalysis",
         },
     )
     assert response.status_code == 201
@@ -188,4 +189,35 @@ def test_register_admin_provision_existing_user(client: TestClient, analyst_user
     db_session.refresh(analyst_user)
     assert analyst_user.role.name == "admin"
     assert analyst_user.full_name == "Promoted Admin Officer"
+
+
+def test_register_admin_without_pin_fails(client: TestClient):
+    """Test that attempting to register an admin without security PIN is rejected with 403."""
+    response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "unauthorized_admin@fraudsentinel.com",
+            "password": "MasterPassword!123",
+            "full_name": "Rogue Admin",
+            "role": "admin",
+        },
+    )
+    assert response.status_code == 403
+    assert "Security Clearance PIN" in response.json()["detail"]
+
+
+def test_register_admin_with_wrong_pin_fails(client: TestClient):
+    """Test that registering an admin with an invalid security PIN is rejected with 403."""
+    response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "bad_pin_admin@fraudsentinel.com",
+            "password": "MasterPassword!123",
+            "full_name": "Bad Pin Admin",
+            "role": "admin",
+            "security_pin": "WrongPin123",
+        },
+    )
+    assert response.status_code == 403
+    assert "Security Clearance PIN" in response.json()["detail"]
 

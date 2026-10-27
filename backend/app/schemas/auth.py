@@ -46,6 +46,7 @@ class UserCreate(BaseModel):
     password: Optional[str] = Field("Sentin3l#2026", description="Initial password")
     full_name: str = Field(..., description="Full name")
     role: str = Field("analyst", description="Role: admin, analyst, viewer")
+    security_pin: Optional[str] = Field(None, description="Security PIN required for administrator registration")
 
 
 class UserUpdate(BaseModel):

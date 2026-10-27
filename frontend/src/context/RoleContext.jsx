@@ -219,15 +219,26 @@ export function RoleProvider({ children }) {
     }
   }, []);
 
-  // Explicit register with email, password, full name, and role
+  // Explicit register with email, password, full name, role, and security PIN
   const registerWithCredentials = useCallback(
-    async (email, password, fullName = '', targetRole = 'analyst') => {
+    async (email, password, fullName = '', targetRole = 'analyst', securityPin = '') => {
       setAuthLoading(true);
       setAuthError(null);
       try {
         let token = null;
         const normalizedRole = targetRole.toLowerCase() === 'admin' ? 'admin' : 'analyst';
 
+        // 1. Direct FastAPI backend provisioning (enforces Security Clearance PIN for admin)
+        const backendRes = await backendRegister({
+          email: email.trim(),
+          password,
+          full_name: fullName.trim(),
+          role: normalizedRole,
+          security_pin: securityPin ? securityPin.trim() : undefined,
+        });
+        token = backendRes?.access_token;
+
+        // 2. Optionally mirror account in Supabase if configured
         if (isSupabaseConfigured && supabase) {
           try {
             const { data, error } = await supabase.auth.signUp({
@@ -241,23 +252,12 @@ export function RoleProvider({ children }) {
               },
             });
 
-            if (!error && data?.session?.access_token) {
+            if (!token && !error && data?.session?.access_token) {
               token = data.session.access_token;
             }
           } catch (supErr) {
             console.warn('[RoleContext] Supabase register notice:', supErr?.message);
           }
-        }
-
-        // Direct FastAPI backend authentication & provisioning
-        if (!token) {
-          const backendRes = await backendRegister({
-            email: email.trim(),
-            password,
-            full_name: fullName.trim(),
-            role: normalizedRole,
-          });
-          token = backendRes?.access_token;
         }
 
         if (token) {
