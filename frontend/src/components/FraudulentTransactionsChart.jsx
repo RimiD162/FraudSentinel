@@ -23,8 +23,15 @@ const CustomTooltip = ({ active, payload, label }) => {
  * FraudulentTransactionsChart Component
  * Displays hourly/daily fraudulent transaction counts using an elegant amber BarChart.
  */
-export default function FraudulentTransactionsChart({ fraudData }) {
-  const { headline, total, timeframe, delta, isPositive, data } = fraudData;
+export default function FraudulentTransactionsChart({ fraudData = {} }) {
+  const {
+    headline = 'Fraudulent Transactions',
+    total = '0',
+    timeframe = 'Past 7 Days',
+    delta = null,
+    isPositive = false,
+    data = []
+  } = fraudData || {};
 
   return (
     <div className="bg-white border border-[#E5DCBE] rounded-2xl sm:rounded-3xl p-6 sm:p-7 flex flex-col justify-between shadow-xl shadow-amber-500/5 relative overflow-hidden">

@@ -111,8 +111,8 @@ def login(
     "/register",
     response_model=TokenResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Register New Analyst Account",
-    description="Self-service registration for Fraud Analysts.",
+    summary="Register New Analyst or Administrator Account",
+    description="Self-service registration and administrative provisioning for FraudSentinel accounts.",
 )
 def register(
     payload: UserCreate,
@@ -121,50 +121,66 @@ def register(
 ) -> TokenResponse:
     client_ip = request.client.host if request.client else None
     email_clean = payload.email.strip().lower()
+    target_role_name = (payload.role or "analyst").lower().strip()
 
     existing = db.query(User).filter(User.email.ilike(email_clean)).first()
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"An account with email '{email_clean}' already exists.",
-        )
 
-    target_role_name = (payload.role or "analyst").lower().strip()
     role = db.query(Role).filter(Role.name == target_role_name).first()
     if not role:
-        role = db.query(Role).filter(Role.name == "analyst").first()
-    if not role:
-        role = db.query(Role).first()
+        role = Role(name=target_role_name, description=f"{target_role_name.title()} privileges")
+        db.add(role)
+        db.commit()
+        db.refresh(role)
 
     raw_password = payload.password or "admin123"
-    new_user = User(
-        email=email_clean,
-        hashed_password=get_password_hash(raw_password),
-        full_name=payload.full_name.strip() if payload.full_name else email_clean.split("@")[0].title(),
-        role_id=role.id if role else None,
-        is_active=True,
-    )
 
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    if existing:
+        if target_role_name == "admin":
+            # Upgrade existing account to administrator with new credentials and full name
+            existing.role = role
+            existing.role_id = role.id
+            existing.hashed_password = get_password_hash(raw_password)
+            if payload.full_name:
+                existing.full_name = payload.full_name.strip()
+            existing.is_active = True
+            db.commit()
+            db.refresh(existing)
+            user_record = existing
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"An account with email '{email_clean}' already exists. Please sign in instead.",
+            )
+    else:
+        new_user = User(
+            email=email_clean,
+            hashed_password=get_password_hash(raw_password),
+            full_name=payload.full_name.strip() if payload.full_name else email_clean.split("@")[0].title(),
+            role=role,
+            role_id=role.id,
+            is_active=True,
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        user_record = new_user
 
-    role_name = new_user.role.name if new_user.role else "analyst"
+    role_name = user_record.role.name if user_record.role else target_role_name
     expires_delta = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     token_data = {
-        "sub": str(new_user.id),
-        "user_id": str(new_user.id),
-        "email": new_user.email,
+        "sub": str(user_record.id),
+        "user_id": str(user_record.id),
+        "email": user_record.email,
         "role": role_name,
     }
     access_token = create_access_token(data=token_data, expires_delta=expires_delta)
 
     log_audit_event(
         db=db,
-        action="AUTH_REGISTER_SUCCESS",
-        user_id=new_user.id,
+        action="AUTH_REGISTER_SUCCESS" if not existing else "AUTH_ADMIN_PROVISION_UPGRADE",
+        user_id=user_record.id,
         resource_type="auth",
-        details={"email": new_user.email, "role": role_name},
+        details={"email": user_record.email, "role": role_name},
         ip_address=client_ip,
     )
 
@@ -172,9 +188,9 @@ def register(
         access_token=access_token,
         token_type="bearer",
         expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        user_id=str(new_user.id),
-        email=new_user.email,
-        full_name=new_user.full_name,
+        user_id=str(user_record.id),
+        email=user_record.email,
+        full_name=user_record.full_name,
         role=role_name,
     )
 

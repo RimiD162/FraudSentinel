@@ -37,6 +37,7 @@ export default function FraudAlerts({ forceView }) {
   const isViewOnly = useViewOnly();
   const location = useLocation();
   const isUserPath = location.pathname.endsWith('/user') || forceView === 'user';
+  const isAdminPath = location.pathname.endsWith('/admin') || location.pathname.startsWith('/admin') || forceView === 'admin';
   const { role, currentUser } = useRole();
   const isUserAdminRole = Boolean(currentUser && (currentUser.role || role || '').toLowerCase() === 'admin');
   const isAdmin = isUserAdminRole && (isAdminPath || !isUserPath);

@@ -226,6 +226,7 @@ export function RoleProvider({ children }) {
       setAuthError(null);
       try {
         let token = null;
+        const normalizedRole = targetRole.toLowerCase() === 'admin' ? 'admin' : 'analyst';
 
         if (isSupabaseConfigured && supabase) {
           try {
@@ -235,25 +236,21 @@ export function RoleProvider({ children }) {
               options: {
                 data: {
                   full_name: fullName.trim(),
+                  role: normalizedRole,
                 },
               },
             });
 
             if (!error && data?.session?.access_token) {
               token = data.session.access_token;
-            } else if (!error && data?.user && !data?.session) {
-              return {
-                status: 'confirmation_required',
-                message: 'Registration successful! Please check your email to confirm your account.',
-              };
             }
           } catch (supErr) {
-            console.warn('[RoleContext] Supabase register error:', supErr?.message);
+            console.warn('[RoleContext] Supabase register notice:', supErr?.message);
           }
         }
 
+        // Direct FastAPI backend authentication & provisioning
         if (!token) {
-          const normalizedRole = targetRole.toLowerCase() === 'admin' ? 'admin' : 'analyst';
           const backendRes = await backendRegister({
             email: email.trim(),
             password,
@@ -266,7 +263,7 @@ export function RoleProvider({ children }) {
         if (token) {
           setAuthToken(token);
           const profile = await getMe(token);
-          const cleanRole = (profile?.role || 'analyst').toLowerCase();
+          const cleanRole = (profile?.role || normalizedRole).toLowerCase();
           const userObj = {
             id: profile?.id,
             email: profile?.email || email.trim(),
@@ -335,14 +332,14 @@ export function RoleProvider({ children }) {
   };
 
   const value = useMemo(() => {
-    const currentPermissions = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.viewer;
+    const currentPermissions = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.viewer || ROLE_PERMISSIONS.analyst || {};
 
-    const getPermission = (section) => currentPermissions[section] || 'hidden';
+    const getPermission = (section) => currentPermissions?.[section] || 'hidden';
     const isViewOnly = (section) => getPermission(section) === 'view';
     const isAllowed = (section) => getPermission(section) !== 'hidden';
     const isFull = (section) => getPermission(section) === 'full';
 
-    const currentRoleMeta = ROLES.find((r) => r.id === role) || ROLES[2] || ROLES[0];
+    const currentRoleMeta = ROLES.find((r) => r.id === role) || ROLES[0];
 
     return {
       role,

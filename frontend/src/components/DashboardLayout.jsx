@@ -95,10 +95,10 @@ export default function DashboardLayout() {
               </div>
               <div className="flex flex-col text-left">
                 <span className="font-bold text-[#1A1612] leading-none truncate max-w-[140px]">
-                  {currentUser.fullName || currentUser.email}
+                  {currentUser?.fullName || currentUser?.email || 'User'}
                 </span>
                 <span className="text-[10px] uppercase tracking-wider font-extrabold text-amber-800 mt-0.5">
-                  {roleMeta?.badge || role}
+                  {roleMeta?.badge || role || 'User'}
                 </span>
               </div>
             </div>

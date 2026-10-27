@@ -29,9 +29,8 @@ async def lifespan(app: FastAPI):
         Base.metadata.create_all(bind=engine)
         db = SessionLocal()
         try:
-            from scripts.seed import seed_default_users, seed_roles
+            from scripts.seed import seed_roles
             roles = seed_roles(db)
-            seed_default_users(db, roles)
             db.commit()
         except Exception as e:
             db.rollback()

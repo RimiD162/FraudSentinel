@@ -16,13 +16,23 @@ export const ROLE_PERMISSIONS = {
     analytics: 'full',
     reports: 'full',
     userManagement: 'full',
-    settings: 'hidden',
+    settings: 'full',
   },
   analyst: {
     dashboard: 'full',
     analyzeTransaction: 'full',
     transactions: 'full',
     fraudAlerts: 'full',
+    analytics: 'hidden',
+    reports: 'hidden',
+    userManagement: 'hidden',
+    settings: 'hidden',
+  },
+  viewer: {
+    dashboard: 'view',
+    analyzeTransaction: 'view',
+    transactions: 'view',
+    fraudAlerts: 'view',
     analytics: 'hidden',
     reports: 'hidden',
     userManagement: 'hidden',
@@ -42,6 +52,12 @@ export const ROLES = [
     label: 'Fraud Analyst',
     badge: 'Analyst Access',
     description: 'Investigator with full access to transactions, alerts, and inference analysis modules.',
+  },
+  {
+    id: 'viewer',
+    label: 'Viewer',
+    badge: 'Read-Only',
+    description: 'Read-only audit permissions for observing fraud alerts and telemetry.',
   },
 ];
 

@@ -8,9 +8,9 @@ import FraudAlertsTable from './FraudAlertsTable.jsx';
  */
 export default function UserDashboardView({
   currentUser,
-  statsData,
-  alertsData,
-  loading,
+  statsData = [],
+  alertsData = [],
+  loading = false,
 }) {
   const displayName = currentUser?.fullName || currentUser?.email?.split('@')[0] || 'Fraud Analyst';
 
@@ -42,7 +42,7 @@ export default function UserDashboardView({
             delta={alertsData?.length > 0 ? 'Requires Action' : null}
             isPositive={false}
           />
-          {statsData
+          {(statsData || [])
             .filter((item) => item.id !== 'accuracy' && item.label !== 'Detection Accuracy')
             .map((item) => (
               <StatCard

@@ -131,3 +131,61 @@ def test_audit_log_created_on_login_success(client: TestClient, db_session: Sess
     )
     assert audit is not None
     assert "admin@test.com" in audit.details
+
+
+def test_register_new_analyst(client: TestClient, db_session: Session):
+    """Test self-service registration for a new analyst user."""
+    response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "newanalyst@test.com",
+            "password": "password123",
+            "full_name": "New Analyst",
+            "role": "analyst",
+        },
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data["email"] == "newanalyst@test.com"
+    assert data["role"] == "analyst"
+    assert "access_token" in data
+
+
+def test_register_duplicate_analyst_fails(client: TestClient, analyst_user: User):
+    """Test that registering an existing email as an analyst is rejected with 400."""
+    response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": analyst_user.email,
+            "password": "password123",
+            "full_name": "Duplicate Analyst",
+            "role": "analyst",
+        },
+    )
+    assert response.status_code == 400
+    assert "already exists" in response.json()["detail"].lower()
+
+
+def test_register_admin_provision_existing_user(client: TestClient, analyst_user: User, db_session: Session):
+    """Test provisioning an existing user into an administrator account."""
+    response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": analyst_user.email,
+            "password": "NewMasterPassword!123",
+            "full_name": "Promoted Admin Officer",
+            "role": "admin",
+        },
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data["email"] == analyst_user.email
+    assert data["role"] == "admin"
+    assert data["full_name"] == "Promoted Admin Officer"
+    assert "access_token" in data
+
+    # Verify user record in database has been updated to admin
+    db_session.refresh(analyst_user)
+    assert analyst_user.role.name == "admin"
+    assert analyst_user.full_name == "Promoted Admin Officer"
+

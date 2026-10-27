@@ -23,8 +23,8 @@ const CustomTooltip = ({ active, payload, label }) => {
  * TransactionVolumeChart Component
  * Displays 24-hour / multi-day transaction volume trends using an elegant amber AreaChart.
  */
-export default function TransactionVolumeChart({ volumeData }) {
-  const { headline, total, timeframe, delta, isPositive, data } = volumeData;
+export default function TransactionVolumeChart({ volumeData = {} }) {
+  const { headline = 'Transaction Volume', total = '0', timeframe = 'Past 7 Days', delta = null, isPositive = true, data = [] } = volumeData || {};
 
   return (
     <div className="bg-white border border-[#E5DCBE] rounded-2xl sm:rounded-3xl p-6 sm:p-7 flex flex-col justify-between shadow-xl shadow-amber-500/5 relative overflow-hidden">

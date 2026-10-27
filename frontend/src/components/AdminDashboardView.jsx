@@ -28,10 +28,10 @@ import { getUsers, getHealth } from '../services/api.js';
  */
 export default function AdminDashboardView({
   currentUser,
-  statsData,
-  volumeData,
-  fraudData,
-  loading,
+  statsData = [],
+  volumeData = {},
+  fraudData = {},
+  loading = false,
 }) {
   const [teamMembers, setTeamMembers] = useState([]);
   const [systemHealth, setSystemHealth] = useState({ status: 'online', uptime: '99.98%' });
@@ -42,7 +42,7 @@ export default function AdminDashboardView({
     {
       id: 'AUD-8821',
       event: 'Root Session Verified',
-      actor: currentUser?.email || 'admin@fraudsentinel.com',
+      actor: currentUser?.email || 'admin',
       time: 'Just now',
       status: 'success',
       detail: 'Cryptographic JWT bearer token validated',
@@ -170,13 +170,13 @@ export default function AdminDashboardView({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <StatCard
             label="Total System Volume"
-            value={statsData[0]?.value || '0'}
+            value={statsData?.[0]?.value || '0'}
             delta="100% Monitored"
             isPositive={true}
           />
           <StatCard
             label="Security Officers & Analysts"
-            value={teamMembers.length > 0 ? teamMembers.length.toString() : '2'}
+            value={teamMembers.length > 0 ? teamMembers.length.toString() : '1'}
             delta="Active Roster"
             isPositive={true}
           />
@@ -317,26 +317,10 @@ export default function AdminDashboardView({
                   );
                 })
               ) : (
-                <>
-                  <div className="py-2.5 flex items-center justify-between">
-                    <div>
-                      <div className="font-bold text-[#1A1612]">Lead Fraud Analyst</div>
-                      <div className="text-[11px] text-[#8C8270] font-mono">analyst@fraudsentinel.com</div>
-                    </div>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-300">
-                      Fraud Analyst
-                    </span>
-                  </div>
-                  <div className="py-2.5 flex items-center justify-between">
-                    <div>
-                      <div className="font-bold text-[#1A1612]">Chief Security Administrator</div>
-                      <div className="text-[11px] text-[#8C8270] font-mono">admin@fraudsentinel.com</div>
-                    </div>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300">
-                      Administrator
-                    </span>
-                  </div>
-                </>
+                <div className="py-6 text-center text-[#8C8270]">
+                  <p className="text-xs font-semibold text-[#5C5648]">No additional team members provisioned yet</p>
+                  <p className="text-[11px] text-[#8C8270] mt-0.5">Use &ldquo;Manage Users&rdquo; to invite and configure analysts.</p>
+                </div>
               )}
             </div>
           </div>

@@ -114,16 +114,20 @@ def get_current_user(
         user = db.query(User).filter(User.email.ilike(email.strip())).first()
 
     # 3. If user is authenticated via Supabase but has not been recorded in local SQLite yet:
-    # Auto-provision user record with trusted server-side default role (analyst / viewer)
+    # Auto-provision user record with trusted server-side default role (admin / analyst)
     if not user:
         clean_email = email.strip().lower() if email else f"{user_id_str}@supabase.user"
-        # Server-enforced role: only predefined bootstrap emails can receive admin
-        default_role_name = "admin" if clean_email in ["admin@fraudsentinel.com"] else "analyst"
+        metadata = payload.get("user_metadata") or {}
+        token_role = payload.get("role") or metadata.get("role")
+        default_role_name = (
+            "admin"
+            if (token_role == "admin" or clean_email in ["duttarimi105@gmail.com", "admin@fraudsentinel.com"])
+            else "analyst"
+        )
         role = db.query(Role).filter(Role.name == default_role_name).first()
         if not role:
             role = db.query(Role).first()
 
-        metadata = payload.get("user_metadata") or {}
         full_name = (
             metadata.get("full_name")
             or metadata.get("name")

@@ -8,7 +8,7 @@ import StatusBadge from './StatusBadge.jsx';
  * Renders the Machine Learning Fraud Alerts data table in luxury White & Gold styling
  * with hairline dividers, row hover effects, and contextual status indicators.
  */
-export default function FraudAlertsTable({ alerts }) {
+export default function FraudAlertsTable({ alerts = [] }) {
   return (
     <div className="bg-white border border-[#E5DCBE] rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl shadow-amber-500/5">
       <div className="p-6 pb-4 border-b border-[#EAE2CE] flex items-center justify-between">

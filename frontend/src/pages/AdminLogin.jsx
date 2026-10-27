@@ -215,26 +215,18 @@ export default function AdminLogin() {
 
             {/* Success Alert */}
             {successMessage && (
-              <div className="mb-5 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-start gap-2.5 shadow-xs animate-fadeIn">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <span className="leading-relaxed font-medium">{successMessage}</span>
-              </div>
-            )}
-
-            {/* Quick Demo Credential Helper */}
-            {authMode === 'signin' && (
-              <div className="mb-4 p-2.5 rounded-xl bg-[#FAF8F2] border border-[#E5DCBE] flex items-center justify-between text-xs">
-                <span className="text-[#5C5648] font-medium">Default Admin: <strong className="text-[#1A1612]">admin@fraudsentinel.com</strong></span>
+              <div className="mb-5 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex flex-col gap-2.5 shadow-xs animate-fadeIn">
+                <div className="flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span className="leading-relaxed font-medium">{successMessage}</span>
+                </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    setEmail('admin@fraudsentinel.com');
-                    setPassword('admin123');
-                    setErrorMessage(null);
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-[11px] transition-colors cursor-pointer"
+                  onClick={() => navigate(targetPath, { replace: true })}
+                  className="self-start inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-xs cursor-pointer"
                 >
-                  Auto-Fill
+                  <span>Launch Admin Console</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             )}
